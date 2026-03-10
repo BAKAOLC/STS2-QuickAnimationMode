@@ -112,6 +112,7 @@ namespace STS2QuickAnimationMode
             patcher.RegisterPatch<SettingsScreenPatch>();
             patcher.RegisterPatch<SettingsClosePatch>();
             patcher.RegisterPatch<HitStopPatch>();
+            patcher.RegisterPatch<ProgressiveSpeedPatch>();
         }
     }
 }

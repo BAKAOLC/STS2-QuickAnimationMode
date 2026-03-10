@@ -1,3 +1,6 @@
 {
-  "SPEED_MULTIPLIER": "ゲーム速度"
+  "SPEED_MULTIPLIER": "ゲーム速度",
+  "PROGRESSIVE_TOGGLE": "段階的加速",
+  "TIME_THRESHOLD": "時間閾値",
+  "TRANSITION_DURATION": "遷移時間"
 }

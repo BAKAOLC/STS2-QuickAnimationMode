@@ -1,3 +1,6 @@
 {
-  "SPEED_MULTIPLIER": "游戏倍速"
+  "SPEED_MULTIPLIER": "游戏倍速",
+  "PROGRESSIVE_TOGGLE": "渐进式加速",
+  "TIME_THRESHOLD": "时间阈值",
+  "TRANSITION_DURATION": "过渡时长"
 }

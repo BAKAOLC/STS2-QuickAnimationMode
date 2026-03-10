@@ -1,3 +1,6 @@
 {
-  "SPEED_MULTIPLIER": "Speed Multiplier"
+  "SPEED_MULTIPLIER": "Speed Multiplier",
+  "PROGRESSIVE_TOGGLE": "Progressive Acceleration",
+  "TIME_THRESHOLD": "Time Threshold",
+  "TRANSITION_DURATION": "Transition Duration"
 }

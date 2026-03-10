@@ -28,7 +28,7 @@ namespace STS2QuickAnimationMode.Patches
         /// </summary>
         public static void Prefix(ref float timeScale)
         {
-            timeScale *= SpeedManager.CurrentMultiplier;
+            timeScale *= SpeedManager.EffectiveMultiplier;
         }
     }
 }

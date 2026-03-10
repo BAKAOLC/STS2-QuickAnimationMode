@@ -1,3 +1,6 @@
 {
-  "SPEED_MULTIPLIER": "게임 속도"
+  "SPEED_MULTIPLIER": "게임 속도",
+  "PROGRESSIVE_TOGGLE": "점진적 가속",
+  "TIME_THRESHOLD": "시간 임계값",
+  "TRANSITION_DURATION": "전환 시간"
 }
