@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Actions;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace STS2QuickAnimationMode.Utils
@@ -29,6 +30,10 @@ namespace STS2QuickAnimationMode.Utils
         private static double? _accelerationStartTime;
         private static double? _transitionStartTime;
         private static float _transitionStartMultiplier = 1.0f;
+        
+        // Idle buffer state
+        private static double? _idleStartTime;
+        private const float IdleBufferDuration = 0.15f;
 
         public static float CurrentMultiplier => _settings?.Data.SpeedMultiplier ?? 1.0f;
         public static bool ProgressiveEnabled => _settings?.Data.ProgressiveEnabled ?? false;
@@ -178,18 +183,35 @@ namespace STS2QuickAnimationMode.Utils
             var isRunning = actionExecutor.IsRunning;
             var isPaused = actionExecutor.IsPaused;
             var currentAction = actionExecutor.CurrentlyRunningAction;
-            var hasActiveWork = currentAction != null || (!isQueueEmpty && !isPaused) || isRunning;
+            var isGatheringPlayerChoice = currentAction?.State == GameActionState.GatheringPlayerChoice;
 
-            if (!hasActiveWork)
+            if (isGatheringPlayerChoice)
             {
                 ResetToNormalSpeed();
                 return;
             }
 
+            var hasActiveWork = currentAction != null || (!isQueueEmpty && !isPaused) || isRunning;
+
+            if (!hasActiveWork)
+            {
+                _idleStartTime ??= Time.GetTicksMsec() / 1000.0;
+
+                var currentTime = Time.GetTicksMsec() / 1000.0;
+                var idleElapsed = currentTime - _idleStartTime.Value;
+
+                if (idleElapsed >= IdleBufferDuration)
+                {
+                    ResetToNormalSpeed();
+                }
+                return;
+            }
+
+            _idleStartTime = null;
+
             _accelerationStartTime ??= Time.GetTicksMsec() / 1000.0;
 
-            var currentTime = Time.GetTicksMsec() / 1000.0;
-            var elapsedTime = currentTime - _accelerationStartTime.Value;
+            var elapsedTime = Time.GetTicksMsec() / 1000.0 - _accelerationStartTime.Value;
 
             _targetMultiplier = elapsedTime >= TimeThreshold ? CurrentMultiplier : 1.0f;
         }
@@ -197,8 +219,11 @@ namespace STS2QuickAnimationMode.Utils
         private static void ResetToNormalSpeed()
         {
             _targetMultiplier = 1.0f;
+            _currentDisplayMultiplier = 1.0f;
             _accelerationStartTime = null;
             _transitionStartTime = null;
+            _idleStartTime = null;
+            ApplySpeed();
         }
 
         public static void ResetSpeed()
@@ -207,6 +232,7 @@ namespace STS2QuickAnimationMode.Utils
             _targetMultiplier = _currentDisplayMultiplier;
             _accelerationStartTime = null;
             _transitionStartTime = null;
+            _idleStartTime = null;
             ApplySpeed();
         }
 
