@@ -1,0 +1,7 @@
+{
+  "pck_name": "STS2-QuickAnimationMode",
+  "name": "Speed Control",
+  "author": "OLC",
+  "description": "Add customizable game speed multiplier (1x-10x) to the settings screen, beyond the built-in Fast Mode",
+  "version": "0.0.1"
+}
