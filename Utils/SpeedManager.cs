@@ -201,6 +201,15 @@ namespace STS2QuickAnimationMode.Utils
             _transitionStartTime = null;
         }
 
+        public static void ResetSpeed()
+        {
+            _currentDisplayMultiplier = ProgressiveEnabled ? 1.0f : CurrentMultiplier;
+            _targetMultiplier = _currentDisplayMultiplier;
+            _accelerationStartTime = null;
+            _transitionStartTime = null;
+            ApplySpeed();
+        }
+
         private static void ApplySpeedTransition(double delta)
         {
             if (Mathf.IsEqualApprox(_currentDisplayMultiplier, _targetMultiplier, 0.01f))
