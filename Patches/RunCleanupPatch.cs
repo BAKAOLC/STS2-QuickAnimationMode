@@ -1,6 +1,6 @@
 using MegaCrit.Sts2.Core.Runs;
-using STS2QuickAnimationMode.Patching.Models;
 using STS2QuickAnimationMode.Utils;
+using STS2RitsuLib.Patching.Models;
 
 namespace STS2QuickAnimationMode.Patches
 {

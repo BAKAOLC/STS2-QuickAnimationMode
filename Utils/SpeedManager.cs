@@ -1,6 +1,7 @@
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Actions;
 using MegaCrit.Sts2.Core.Runs;
+using STS2QuickAnimationMode.Data;
 
 namespace STS2QuickAnimationMode.Utils
 {
@@ -10,6 +11,7 @@ namespace STS2QuickAnimationMode.Utils
     /// </summary>
     public static class SpeedManager
     {
+        private const float IdleBufferDuration = 0.15f;
         public static readonly float[] SpeedOptions = [1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 5.0f, 8.0f, 10.0f];
         public static readonly string[] SpeedLabels = ["1x", "1.5x", "2x", "3x", "4x", "5x", "8x", "10x"];
 
@@ -20,8 +22,6 @@ namespace STS2QuickAnimationMode.Utils
         public static readonly float[] TimeThresholdOptions = [0.5f, 1.0f, 2.0f, 3.0f, 5.0f, 10.0f];
         public static readonly string[] TimeThresholdLabels = ["0.5s", "1s", "2s", "3s", "5s", "10s"];
 
-        private static Setting<SpeedSettings>? _settings;
-
         // Progressive acceleration state
         private static float _currentDisplayMultiplier = 1.0f;
         private static float _targetMultiplier = 1.0f;
@@ -30,15 +30,16 @@ namespace STS2QuickAnimationMode.Utils
         private static double? _accelerationStartTime;
         private static double? _transitionStartTime;
         private static float _transitionStartMultiplier = 1.0f;
-        
+
         // Idle buffer state
         private static double? _idleStartTime;
-        private const float IdleBufferDuration = 0.15f;
 
-        public static float CurrentMultiplier => _settings?.Data.SpeedMultiplier ?? 1.0f;
-        public static bool ProgressiveEnabled => _settings?.Data.ProgressiveEnabled ?? false;
-        public static float TransitionDuration => _settings?.Data.TransitionDuration ?? 10.0f;
-        public static float TimeThreshold => _settings?.Data.TimeThreshold ?? 3.0f;
+        private static SpeedSettings Settings => ModDataStore.Get<SpeedSettings>(ModDataStore.SettingsKey);
+
+        public static float CurrentMultiplier => Settings.SpeedMultiplier;
+        public static bool ProgressiveEnabled => Settings.ProgressiveEnabled;
+        public static float TransitionDuration => Settings.TransitionDuration;
+        public static float TimeThreshold => Settings.TimeThreshold;
 
         /// <summary>
         ///     The actual multiplier being applied (may differ from target during transitions)
@@ -83,12 +84,6 @@ namespace STS2QuickAnimationMode.Utils
 
         public static void Initialize()
         {
-            _settings = new(
-                Const.SettingsPath,
-                new(),
-                "SpeedManager"
-            );
-            _settings.Load();
             _currentDisplayMultiplier = ProgressiveEnabled ? 1.0f : CurrentMultiplier;
             _targetMultiplier = _currentDisplayMultiplier;
             ApplySpeed();
@@ -101,8 +96,8 @@ namespace STS2QuickAnimationMode.Utils
             if (index < 0 || index >= SpeedOptions.Length) return;
 
             var newSpeed = SpeedOptions[index];
-            _settings?.Modify(data => data.SpeedMultiplier = newSpeed);
-            _settings?.Save();
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.SpeedMultiplier = newSpeed);
+            ModDataStore.Save(ModDataStore.SettingsKey);
 
             if (!ProgressiveEnabled)
                 ApplySpeed();
@@ -112,8 +107,8 @@ namespace STS2QuickAnimationMode.Utils
 
         public static void SetProgressiveEnabled(bool enabled)
         {
-            _settings?.Modify(data => data.ProgressiveEnabled = enabled);
-            _settings?.Save();
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.ProgressiveEnabled = enabled);
+            ModDataStore.Save(ModDataStore.SettingsKey);
 
             if (enabled)
             {
@@ -136,8 +131,8 @@ namespace STS2QuickAnimationMode.Utils
             if (index < 0 || index >= TransitionDurationOptions.Length) return;
 
             var newDuration = TransitionDurationOptions[index];
-            _settings?.Modify(data => data.TransitionDuration = newDuration);
-            _settings?.Save();
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.TransitionDuration = newDuration);
+            ModDataStore.Save(ModDataStore.SettingsKey);
             Main.Logger.Info($"Transition duration set to {newDuration}s");
         }
 
@@ -146,8 +141,8 @@ namespace STS2QuickAnimationMode.Utils
             if (index < 0 || index >= TimeThresholdOptions.Length) return;
 
             var newThreshold = TimeThresholdOptions[index];
-            _settings?.Modify(data => data.TimeThreshold = newThreshold);
-            _settings?.Save();
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.TimeThreshold = newThreshold);
+            ModDataStore.Save(ModDataStore.SettingsKey);
             Main.Logger.Info($"Time threshold set to {newThreshold}s");
         }
 
@@ -200,10 +195,7 @@ namespace STS2QuickAnimationMode.Utils
                 var currentTime = Time.GetTicksMsec() / 1000.0;
                 var idleElapsed = currentTime - _idleStartTime.Value;
 
-                if (idleElapsed >= IdleBufferDuration)
-                {
-                    ResetToNormalSpeed();
-                }
+                if (idleElapsed >= IdleBufferDuration) ResetToNormalSpeed();
                 return;
             }
 

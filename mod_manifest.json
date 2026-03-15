@@ -1,11 +1,14 @@
 {
   "id": "STS2-QuickAnimationMode",
+  "pck_name": "STS2-QuickAnimationMode",
   "name": "Speed Control",
   "author": "OLC",
   "description": "Add customizable game speed multiplier (1x-10x) to the settings screen, beyond the built-in Fast Mode",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "has_pck": false,
   "has_dll": true,
   "affects_gameplay": false,
-  "dependencies": []
+  "dependencies": [
+    "STS2-RitsuLib"
+  ]
 }
