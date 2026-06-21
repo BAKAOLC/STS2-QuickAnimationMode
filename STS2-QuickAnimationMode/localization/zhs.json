@@ -1,6 +1,10 @@
 {
   "SPEED_MULTIPLIER": "游戏倍速",
+  "SPEED_MULTIPLIER_DESCRIPTION": "目标游戏速度。关闭渐进式加速时会始终应用这个倍率；开启渐进式加速时，这是长时间自动结算期间会逐渐达到的最高倍率。",
   "PROGRESSIVE_TOGGLE": "渐进式加速",
+  "PROGRESSIVE_TOGGLE_DESCRIPTION": "等待玩家操作时保持 1x，只在动作、动画和自动效果持续结算时才加速。选卡阶段不会计入加速计时。",
   "TIME_THRESHOLD": "时间阈值",
-  "TRANSITION_DURATION": "过渡时长"
+  "TIME_THRESHOLD_DESCRIPTION": "连续非交互动作运行多久后开始渐进式加速。数值越低，越快开始提速；数值越高，短动作越接近原速。",
+  "TRANSITION_DURATION": "过渡时长",
+  "TRANSITION_DURATION_DESCRIPTION": "达到时间阈值后，从 1x 过渡到所选游戏倍速所需的时间。数值越低越干脆，数值越高越平滑。"
 }

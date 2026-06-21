@@ -1,6 +1,10 @@
 {
   "SPEED_MULTIPLIER": "Speed Multiplier",
+  "SPEED_MULTIPLIER_DESCRIPTION": "Target game speed. With Progressive Acceleration off, this applies all the time. With it on, this is the maximum speed reached during long automatic sequences.",
   "PROGRESSIVE_TOGGLE": "Progressive Acceleration",
+  "PROGRESSIVE_TOGGLE_DESCRIPTION": "Starts at 1x while waiting for input, then accelerates only while actions, animations, and automatic effects keep resolving. Card selection does not count toward the timer.",
   "TIME_THRESHOLD": "Time Threshold",
-  "TRANSITION_DURATION": "Transition Duration"
+  "TIME_THRESHOLD_DESCRIPTION": "How long continuous non-interactive action must run before progressive acceleration begins. Lower values speed up sooner; higher values keep short actions closer to normal speed.",
+  "TRANSITION_DURATION": "Transition Duration",
+  "TRANSITION_DURATION_DESCRIPTION": "How long the ramp from 1x to the selected Speed Multiplier takes after the threshold. Lower values feel snappier; higher values feel smoother."
 }

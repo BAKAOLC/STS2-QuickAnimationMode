@@ -1,5 +1,8 @@
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Actions;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Runs;
 using STS2QuickAnimationMode.Data;
 
@@ -179,8 +182,9 @@ namespace STS2QuickAnimationMode.Utils
             var isPaused = actionExecutor.IsPaused;
             var currentAction = actionExecutor.CurrentlyRunningAction;
             var isGatheringPlayerChoice = currentAction?.State == GameActionState.GatheringPlayerChoice;
+            var isSelectingCards = IsCardSelectionInProgress();
 
-            if (isGatheringPlayerChoice)
+            if (isGatheringPlayerChoice || isSelectingCards)
             {
                 ResetToNormalSpeed();
                 return;
@@ -206,6 +210,11 @@ namespace STS2QuickAnimationMode.Utils
             var elapsedTime = Time.GetTicksMsec() / 1000.0 - _accelerationStartTime.Value;
 
             _targetMultiplier = elapsedTime >= TimeThreshold ? CurrentMultiplier : 1.0f;
+        }
+
+        private static bool IsCardSelectionInProgress()
+        {
+            return NPlayerHand.Instance?.IsInCardSelection == true || NOverlayStack.Instance?.Peek() is ICardSelector;
         }
 
         private static void ResetToNormalSpeed()

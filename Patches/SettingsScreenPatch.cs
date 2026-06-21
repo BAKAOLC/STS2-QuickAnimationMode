@@ -66,6 +66,10 @@ namespace STS2QuickAnimationMode.Patches
             var speedLine = CreateSettingLine(
                 "SpeedMultiplier",
                 Main.I18N.Get("SPEED_MULTIPLIER", "Speed Multiplier"),
+                "SPEED_MULTIPLIER",
+                "SPEED_MULTIPLIER_DESCRIPTION",
+                "Speed Multiplier",
+                "Target game speed. With Progressive Acceleration off, this applies all the time. With it on, this is the maximum speed reached during long automatic sequences.",
                 fastModeNode,
                 existingPaginator,
                 () => new NSpeedPaginator()
@@ -80,6 +84,10 @@ namespace STS2QuickAnimationMode.Patches
             var progressiveLine = CreateSettingLine(
                 "ProgressiveToggle",
                 Main.I18N.Get("PROGRESSIVE_TOGGLE", "Progressive Acceleration"),
+                "PROGRESSIVE_TOGGLE",
+                "PROGRESSIVE_TOGGLE_DESCRIPTION",
+                "Progressive Acceleration",
+                "Starts at 1x while waiting for input, then accelerates only while actions, animations, and automatic effects keep resolving. Card selection does not count toward the timer.",
                 fastModeNode,
                 existingPaginator,
                 () => new NProgressiveTogglePaginator()
@@ -94,6 +102,10 @@ namespace STS2QuickAnimationMode.Patches
             var timeThresholdLine = CreateSettingLine(
                 "TimeThreshold",
                 Main.I18N.Get("TIME_THRESHOLD", "Time Threshold"),
+                "TIME_THRESHOLD",
+                "TIME_THRESHOLD_DESCRIPTION",
+                "Time Threshold",
+                "How long continuous non-interactive action must run before progressive acceleration begins. Lower values speed up sooner; higher values keep short actions closer to normal speed.",
                 fastModeNode,
                 existingPaginator,
                 () => new NTimeThresholdPaginator()
@@ -108,6 +120,10 @@ namespace STS2QuickAnimationMode.Patches
             var transitionLine = CreateSettingLine(
                 "TransitionDuration",
                 Main.I18N.Get("TRANSITION_DURATION", "Transition Duration"),
+                "TRANSITION_DURATION",
+                "TRANSITION_DURATION_DESCRIPTION",
+                "Transition Duration",
+                "How long the ramp from 1x to the selected Speed Multiplier takes after the threshold. Lower values feel snappier; higher values feel smoother.",
                 fastModeNode,
                 existingPaginator,
                 () => new NTransitionDurationPaginator()
@@ -121,12 +137,21 @@ namespace STS2QuickAnimationMode.Patches
         private static MarginContainer CreateSettingLine(
             string name,
             string labelText,
+            string hoverTipTitleKey,
+            string hoverTipDescriptionKey,
+            string hoverTipTitleFallback,
+            string hoverTipDescriptionFallback,
             Control? templateLabelSource,
             NPaginator templatePaginator,
             Func<NPaginator> createPaginator)
         {
-            var line = new MarginContainer();
+            var line = new NSettingHoverTipLine();
             line.Name = name;
+            line.SetHoverTipKeys(
+                hoverTipTitleKey,
+                hoverTipDescriptionKey,
+                hoverTipTitleFallback,
+                hoverTipDescriptionFallback);
             line.CustomMinimumSize = new(0, 64);
             line.SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand;
             line.AddThemeConstantOverride("margin_left", 12);

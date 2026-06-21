@@ -1,6 +1,10 @@
 {
   "SPEED_MULTIPLIER": "ゲーム速度",
+  "SPEED_MULTIPLIER_DESCRIPTION": "目標のゲーム速度です。段階的加速がオフの場合は常に適用され、オンの場合は長い自動処理中に到達する最大速度になります。",
   "PROGRESSIVE_TOGGLE": "段階的加速",
+  "PROGRESSIVE_TOGGLE_DESCRIPTION": "入力待ちの間は 1x のまま、アクション、アニメーション、自動効果が続いている間だけ加速します。カード選択はタイマーに含まれません。",
   "TIME_THRESHOLD": "時間閾値",
-  "TRANSITION_DURATION": "遷移時間"
+  "TIME_THRESHOLD_DESCRIPTION": "非操作の連続処理がどれだけ続いたら段階的加速を始めるかを決めます。低い値ほど早く加速し、高い値ほど短い処理は通常速度に近くなります。",
+  "TRANSITION_DURATION": "遷移時間",
+  "TRANSITION_DURATION_DESCRIPTION": "閾値に達した後、1x から選択したゲーム速度へ移行する時間です。低い値ほど素早く、高い値ほどなめらかに変化します。"
 }
