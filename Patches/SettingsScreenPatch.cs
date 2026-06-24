@@ -1,4 +1,6 @@
 using Godot;
+using MegaCrit.Sts2.addons.mega_text;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
 using STS2RitsuLib.Patching.Models;
 
@@ -10,6 +12,8 @@ namespace STS2QuickAnimationMode.Patches
     /// </summary>
     public class SettingsScreenPatch : IPatchMethod
     {
+        private const string PaginatorScene = "screens/paginator";
+
         public static string PatchId => "settings_speed_control";
         public static string Description => "Add speed multiplier control to settings screen";
 
@@ -48,13 +52,6 @@ namespace STS2QuickAnimationMode.Patches
                 return;
             }
 
-            var existingPaginator = screenshakeNode.GetNodeOrNull<NPaginator>("Paginator");
-            if (existingPaginator == null)
-            {
-                Main.Logger.Error("Could not find Paginator node in Screenshake");
-                return;
-            }
-
             var insertIndex = fastModeNode != null
                 ? fastModeNode.GetIndex() + 1
                 : content.GetChildCount();
@@ -71,7 +68,6 @@ namespace STS2QuickAnimationMode.Patches
                 "Speed Multiplier",
                 "Target game speed. With Progressive Acceleration off, this applies all the time. With it on, this is the maximum speed reached during long automatic sequences.",
                 fastModeNode,
-                existingPaginator,
                 () => new NSpeedPaginator()
             );
             content.AddChild(speedLine);
@@ -89,7 +85,6 @@ namespace STS2QuickAnimationMode.Patches
                 "Progressive Acceleration",
                 "Starts at 1x while waiting for input, then accelerates only while actions, animations, and automatic effects keep resolving. Card selection does not count toward the timer.",
                 fastModeNode,
-                existingPaginator,
                 () => new NProgressiveTogglePaginator()
             );
             content.AddChild(progressiveLine);
@@ -107,7 +102,6 @@ namespace STS2QuickAnimationMode.Patches
                 "Time Threshold",
                 "How long continuous non-interactive action must run before progressive acceleration begins. Lower values speed up sooner; higher values keep short actions closer to normal speed.",
                 fastModeNode,
-                existingPaginator,
                 () => new NTimeThresholdPaginator()
             );
             content.AddChild(timeThresholdLine);
@@ -125,7 +119,6 @@ namespace STS2QuickAnimationMode.Patches
                 "Transition Duration",
                 "How long the ramp from 1x to the selected Speed Multiplier takes after the threshold. Lower values feel snappier; higher values feel smoother.",
                 fastModeNode,
-                existingPaginator,
                 () => new NTransitionDurationPaginator()
             );
             content.AddChild(transitionLine);
@@ -142,7 +135,6 @@ namespace STS2QuickAnimationMode.Patches
             string hoverTipTitleFallback,
             string hoverTipDescriptionFallback,
             Control? templateLabelSource,
-            NPaginator templatePaginator,
             Func<NPaginator> createPaginator)
         {
             var line = new NSettingHoverTipLine();
@@ -160,32 +152,86 @@ namespace STS2QuickAnimationMode.Patches
             line.AddThemeConstantOverride("margin_bottom", 0);
 
             var existingLabel = templateLabelSource?.GetNodeOrNull<Control>("Label");
-            RichTextLabel label;
-            if (existingLabel != null)
-                label = (RichTextLabel)existingLabel.Duplicate();
-            else
-                label = new();
+            var label = CreateLabel(existingLabel);
             label.Text = labelText;
             label.SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand;
             label.MouseFilter = Control.MouseFilterEnum.Ignore;
             line.AddChild(label);
 
-            var paginator = createPaginator();
+            var paginator = CreatePaginatorFromScene(createPaginator);
             paginator.Name = "Paginator";
             paginator.CustomMinimumSize = new(324, 64);
             paginator.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
             paginator.FocusMode = Control.FocusModeEnum.All;
             paginator.MouseFilter = Control.MouseFilterEnum.Ignore;
 
-            foreach (var child in templatePaginator.GetChildren())
-            {
-                var copy = child.Duplicate();
-                paginator.AddChild(copy);
-                SetOwnerRecursive(copy, paginator);
-            }
-
             line.AddChild(paginator);
             return line;
+        }
+
+        private static RichTextLabel CreateLabel(Control? template)
+        {
+            var label = new MegaRichTextLabel();
+            if (template is not RichTextLabel templateLabel)
+                return label;
+
+            label.Theme = templateLabel.Theme;
+            label.BbcodeEnabled = templateLabel.BbcodeEnabled;
+            label.VerticalAlignment = templateLabel.VerticalAlignment;
+
+            CopyThemeFont(templateLabel, label, "normal_font");
+            CopyThemeFont(templateLabel, label, "bold_font");
+            CopyThemeFont(templateLabel, label, "italics_font");
+            CopyThemeFont(templateLabel, label, "bold_italics_font");
+            CopyThemeFont(templateLabel, label, "mono_font");
+
+            CopyThemeFontSize(templateLabel, label, "normal_font_size");
+            CopyThemeFontSize(templateLabel, label, "bold_font_size");
+            CopyThemeFontSize(templateLabel, label, "italics_font_size");
+            CopyThemeFontSize(templateLabel, label, "bold_italics_font_size");
+            CopyThemeFontSize(templateLabel, label, "mono_font_size");
+
+            if (templateLabel is MegaRichTextLabel megaLabel)
+            {
+                label.AutoSizeEnabled = megaLabel.AutoSizeEnabled;
+                label.MinFontSize = megaLabel.MinFontSize;
+                label.MaxFontSize = megaLabel.MaxFontSize;
+                label.IsHorizontallyBound = megaLabel.IsHorizontallyBound;
+                label.IsVerticallyBound = megaLabel.IsVerticallyBound;
+            }
+
+            return label;
+        }
+
+        private static NPaginator CreatePaginatorFromScene(Func<NPaginator> createPaginator)
+        {
+            var template = SceneHelper.Instantiate<Control>(PaginatorScene);
+            var paginator = createPaginator();
+
+            paginator.CustomMinimumSize = template.CustomMinimumSize;
+            paginator.Size = template.Size;
+
+            foreach (var child in template.GetChildren())
+            {
+                template.RemoveChild(child);
+                paginator.AddChild(child);
+                SetOwnerRecursive(child, paginator);
+            }
+
+            template.QueueFree();
+            return paginator;
+        }
+
+        private static void CopyThemeFont(RichTextLabel source, RichTextLabel target, string name)
+        {
+            if (source.HasThemeFontOverride(name))
+                target.AddThemeFontOverride(name, source.GetThemeFont(name));
+        }
+
+        private static void CopyThemeFontSize(RichTextLabel source, RichTextLabel target, string name)
+        {
+            if (source.HasThemeFontSizeOverride(name))
+                target.AddThemeFontSizeOverride(name, source.GetThemeFontSize(name));
         }
 
         private static void SetOwnerRecursive(Node node, Node owner)
