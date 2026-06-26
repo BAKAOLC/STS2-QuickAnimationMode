@@ -13,8 +13,8 @@ namespace STS2QuickAnimationMode.Patches
         {
             ConnectSignals();
 
-            foreach (var speedLabel in SpeedManager.SpeedLabels)
-                _options.Add(speedLabel);
+            for (var index = 0; index < SpeedManager.SpeedOptionCount; index++)
+                _options.Add(SpeedManager.GetSpeedLabel(index));
 
             SetFromSettings();
         }

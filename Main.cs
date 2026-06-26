@@ -2,6 +2,7 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 using STS2QuickAnimationMode.Data;
 using STS2QuickAnimationMode.Patches;
+using STS2QuickAnimationMode.Settings;
 using STS2QuickAnimationMode.Utils;
 using STS2RitsuLib;
 using STS2RitsuLib.Patching.Core;
@@ -42,6 +43,7 @@ namespace STS2QuickAnimationMode
                 );
 
                 ModDataStore.Initialize();
+                SpeedControlSettingsPage.Register();
                 SpeedManager.Initialize();
 
                 Logger.Info("Mod initialization complete - Mod is now ACTIVE");
@@ -57,9 +59,25 @@ namespace STS2QuickAnimationMode
         private static void RegisterMainPatches(ModPatcher patcher)
         {
             patcher.RegisterPatch<SettingsScreenPatch>();
-            patcher.RegisterPatch<SettingsClosePatch>();
             patcher.RegisterPatch<HitStopPatch>();
             patcher.RegisterPatch<ProgressiveSpeedPatch>();
+            patcher.RegisterPatch<TimelineProcessSpeedPatch>();
+            patcher.RegisterPatch<CardPileDrawSingleSpeedScopePatch>();
+            patcher.RegisterPatch<CardPileDrawManySpeedScopePatch>();
+            patcher.RegisterPatch<CardPileShuffleSpeedScopePatch>();
+            patcher.RegisterPatch<CardPlayResolutionSpeedScopePatch>();
+            patcher.RegisterPatch<CardDiscardSingleSpeedScopePatch>();
+            patcher.RegisterPatch<CardDiscardManySpeedScopePatch>();
+            patcher.RegisterPatch<CardExhaustSpeedScopePatch>();
+            patcher.RegisterPatch<CombatTurnTransitionSpeedScopePatch>();
+            patcher.RegisterPatch<EnemyActionSpeedScopePatch>();
+            patcher.RegisterPatch<TimelineTaskSpeedScopePatch>();
+            patcher.RegisterPatch<TimelineUnlockScreenOpenSpeedScopePatch>();
+            patcher.RegisterPatch<RunLoadingSpeedScopePatch>();
+            patcher.RegisterPatch<AssetLoadingSpeedScopePatch>();
+            patcher.RegisterPatch<LoadingProcessSpeedPatch>();
+            patcher.RegisterPatch<GameActionLocalPlayerChoiceSpeedGuardPatch>();
+            patcher.RegisterPatch<HookLocalPlayerChoiceSpeedGuardPatch>();
             patcher.RegisterPatch<RunCleanupPatch>();
         }
     }

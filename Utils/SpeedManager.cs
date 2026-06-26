@@ -1,274 +1,422 @@
 using Godot;
-using MegaCrit.Sts2.Core.Entities.Actions;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
-using MegaCrit.Sts2.Core.Runs;
 using STS2QuickAnimationMode.Data;
 
 namespace STS2QuickAnimationMode.Utils
 {
-    /// <summary>
-    ///     Manages the global game speed multiplier via Engine.TimeScale.
-    ///     Supports both fixed speed and progressive acceleration modes.
-    /// </summary>
+    public enum SafeSpeedReason
+    {
+        CardPileSequence,
+        CardPlayResolution,
+        TurnTransition,
+        EnemyAction,
+        TimelineAnimation,
+        LoadingScreen,
+    }
+
     public static class SpeedManager
     {
-        private const float IdleBufferDuration = 0.15f;
-        public static readonly float[] SpeedOptions = [1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 5.0f, 8.0f, 10.0f];
-        public static readonly string[] SpeedLabels = ["1x", "1.5x", "2x", "3x", "4x", "5x", "8x", "10x"];
+        private const float NormalMultiplier = 1.0f;
+        public const float MinSelectableMultiplier = 0.1f;
+        public const float MaxSelectableMultiplier = 10.0f;
+        public const float SpeedSliderStep = 0.1f;
+        private const float DefaultTimelineScopeSeconds = 2.0f;
+        private const float IdleBufferDuration = 0.1f;
 
-        public static readonly float[] TransitionDurationOptions = [1.0f, 2.0f, 3.0f, 5.0f, 10.0f, 15.0f, 20.0f];
-        public static readonly string[] TransitionDurationLabels = ["1s", "2s", "3s", "5s", "10s", "15s", "20s"];
+        public static readonly float[] TransitionDurationOptions = [0.0f, 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 3.0f];
+        public static readonly string[] TransitionDurationLabels = ["0s", "0.1s", "0.2s", "0.5s", "1s", "2s", "3s"];
 
-        // Time thresholds for acceleration (in seconds, real time)
-        public static readonly float[] TimeThresholdOptions = [0.5f, 1.0f, 2.0f, 3.0f, 5.0f, 10.0f];
-        public static readonly string[] TimeThresholdLabels = ["0.5s", "1s", "2s", "3s", "5s", "10s"];
+        public static readonly float[] TimeThresholdOptions = [0.0f, 0.05f, 0.1f, 0.25f, 0.5f, 1.0f, 2.0f];
+        public static readonly string[] TimeThresholdLabels = ["0s", "0.05s", "0.1s", "0.25s", "0.5s", "1s", "2s"];
 
-        // Progressive acceleration state
-        private static float _currentDisplayMultiplier = 1.0f;
-        private static float _targetMultiplier = 1.0f;
+        private static readonly Dictionary<SafeSpeedReason, int> ActiveScopes = new();
+        private static readonly Dictionary<SafeSpeedReason, double> TimedScopes = new();
 
-        // Time-based acceleration state
-        private static double? _accelerationStartTime;
+        private static float _targetMultiplier = NormalMultiplier;
+        private static float _transitionStartMultiplier = NormalMultiplier;
         private static double? _transitionStartTime;
-        private static float _transitionStartMultiplier = 1.0f;
-
-        // Idle buffer state
+        private static double? _safeStateStartTime;
         private static double? _idleStartTime;
+        private static int _localPlayerChoiceDepth;
 
         private static SpeedSettings Settings => ModDataStore.Get<SpeedSettings>(ModDataStore.SettingsKey);
 
-        public static float CurrentMultiplier => Settings.SpeedMultiplier;
-        public static bool ProgressiveEnabled => Settings.ProgressiveEnabled;
-        public static float TransitionDuration => Settings.TransitionDuration;
-        public static float TimeThreshold => Settings.TimeThreshold;
+        public static float CurrentMultiplier => ClampMultiplier(Settings.SpeedMultiplier);
+        public static bool ProgressiveEnabled => Settings.ProgressiveAccelerationEnabled;
+        public static float TransitionDuration => Math.Max(0.0f, Settings.TransitionDuration);
+        public static float TimeThreshold => Math.Max(0.0f, Settings.TimeThreshold);
+        public static float EffectiveMultiplier { get; private set; } = NormalMultiplier;
 
-        /// <summary>
-        ///     The actual multiplier being applied (may differ from target during transitions)
-        /// </summary>
-        public static float EffectiveMultiplier => ProgressiveEnabled ? _currentDisplayMultiplier : CurrentMultiplier;
+        public static int SpeedOptionCount => (int)MathF.Round((MaxSelectableMultiplier - MinSelectableMultiplier) /
+                                                               SpeedSliderStep) + 1;
 
-        public static int CurrentIndex
-        {
-            get
-            {
-                var multiplier = CurrentMultiplier;
-                for (var i = 0; i < SpeedOptions.Length; i++)
-                    if (Mathf.IsEqualApprox(SpeedOptions[i], multiplier))
-                        return i;
-                return 0;
-            }
-        }
+        public static int CurrentIndex => SpeedIndexFromValue(CurrentMultiplier);
+        public static int TransitionDurationIndex => IndexOfClosest(TransitionDurationOptions, TransitionDuration);
+        public static int TimeThresholdIndex => IndexOfClosest(TimeThresholdOptions, TimeThreshold);
 
-        public static int TransitionDurationIndex
-        {
-            get
-            {
-                var duration = TransitionDuration;
-                for (var i = 0; i < TransitionDurationOptions.Length; i++)
-                    if (Mathf.IsEqualApprox(TransitionDurationOptions[i], duration))
-                        return i;
-                return 4;
-            }
-        }
-
-        public static int TimeThresholdIndex
-        {
-            get
-            {
-                var threshold = TimeThreshold;
-                for (var i = 0; i < TimeThresholdOptions.Length; i++)
-                    if (Mathf.IsEqualApprox(TimeThresholdOptions[i], threshold))
-                        return i;
-                return 3;
-            }
-        }
+        private static double Now => Time.GetTicksMsec() / 1000.0;
 
         public static void Initialize()
         {
-            _currentDisplayMultiplier = ProgressiveEnabled ? 1.0f : CurrentMultiplier;
-            _targetMultiplier = _currentDisplayMultiplier;
-            ApplySpeed();
+            NormalizeSettings();
+            ResetSpeed();
             Main.Logger.Info(
-                $"SpeedManager initialized, multiplier: {CurrentMultiplier}x, progressive: {ProgressiveEnabled}");
+                $"SpeedManager initialized, mode: {Settings.AccelerationMode}, multiplier: {CurrentMultiplier}x");
         }
 
-        public static void SetSpeedIndex(int index)
+        public static IDisposable BeginScope(SafeSpeedReason reason)
         {
-            if (index < 0 || index >= SpeedOptions.Length) return;
-
-            var newSpeed = SpeedOptions[index];
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.SpeedMultiplier = newSpeed);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-
-            if (!ProgressiveEnabled)
-                ApplySpeed();
-
-            Main.Logger.Info($"Speed set to {newSpeed}x (index {index})");
+            ActiveScopes.TryGetValue(reason, out var count);
+            ActiveScopes[reason] = count + 1;
+            ProcessFrame(0);
+            return new SpeedScope(reason);
         }
 
-        public static void SetProgressiveEnabled(bool enabled)
+        public static Task TrackAsync(Task task, SafeSpeedReason reason)
         {
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.ProgressiveEnabled = enabled);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-
-            if (enabled)
-            {
-                _currentDisplayMultiplier = 1.0f;
-                _targetMultiplier = 1.0f;
-                _accelerationStartTime = null;
-            }
-            else
-            {
-                _currentDisplayMultiplier = CurrentMultiplier;
-                _targetMultiplier = CurrentMultiplier;
-            }
-
-            ApplySpeed();
-            Main.Logger.Info($"Progressive acceleration {(enabled ? "enabled" : "disabled")}");
+            return TrackAsyncCore(task, reason);
         }
 
-        public static void SetTransitionDurationIndex(int index)
+        public static Task<T> TrackAsync<T>(Task<T> task, SafeSpeedReason reason)
         {
-            if (index < 0 || index >= TransitionDurationOptions.Length) return;
-
-            var newDuration = TransitionDurationOptions[index];
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.TransitionDuration = newDuration);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            Main.Logger.Info($"Transition duration set to {newDuration}s");
+            return TrackAsyncCore(task, reason);
         }
 
-        public static void SetTimeThresholdIndex(int index)
+        public static void ActivateTimed(SafeSpeedReason reason, float seconds = DefaultTimelineScopeSeconds)
         {
-            if (index < 0 || index >= TimeThresholdOptions.Length) return;
+            if (seconds <= 0)
+                return;
 
-            var newThreshold = TimeThresholdOptions[index];
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, data => data.TimeThreshold = newThreshold);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            Main.Logger.Info($"Time threshold set to {newThreshold}s");
+            var until = Now + seconds;
+            if (!TimedScopes.TryGetValue(reason, out var currentUntil) || currentUntil < until)
+                TimedScopes[reason] = until;
+
+            ProcessFrame(0);
         }
 
-        /// <summary>
-        ///     Called every frame to check game state and smoothly transition speed
-        /// </summary>
+        public static void BeginLocalPlayerChoice()
+        {
+            _localPlayerChoiceDepth++;
+            ForceNormalSpeed();
+        }
+
+        public static void EndLocalPlayerChoice()
+        {
+            _localPlayerChoiceDepth = Math.Max(0, _localPlayerChoiceDepth - 1);
+            ProcessFrame(0);
+        }
+
         public static void ProcessFrame(double delta)
         {
-            if (!ProgressiveEnabled) return;
-
-            UpdateTargetSpeedFromGameState();
-            ApplySpeedTransition(delta);
-        }
-
-        private static void UpdateTargetSpeedFromGameState()
-        {
-            if (RunManager.Instance == null)
+            if (!Main.IsModActive)
             {
-                ResetToNormalSpeed();
+                ForceNormalSpeed();
                 return;
             }
 
-            var actionExecutor = RunManager.Instance.ActionExecutor;
-            var actionQueueSet = RunManager.Instance.ActionQueueSet;
+            CleanupExpiredTimedScopes();
 
-            if (actionExecutor == null || actionQueueSet == null)
+            var mode = Settings.AccelerationMode;
+            switch (mode)
             {
-                ResetToNormalSpeed();
-                return;
+                case SpeedAccelerationMode.Off:
+                    SetTarget(NormalMultiplier, true);
+                    break;
+                case SpeedAccelerationMode.AlwaysOn:
+                    SetTarget(CurrentMultiplier, true);
+                    break;
+                case SpeedAccelerationMode.SafeState:
+                    UpdateSafeStateTarget();
+                    break;
+                default:
+                    SetTarget(NormalMultiplier, true);
+                    break;
             }
 
-            var isQueueEmpty = actionQueueSet.IsEmpty;
-            var isRunning = actionExecutor.IsRunning;
-            var isPaused = actionExecutor.IsPaused;
-            var currentAction = actionExecutor.CurrentlyRunningAction;
-            var isGatheringPlayerChoice = currentAction?.State == GameActionState.GatheringPlayerChoice;
-            var isSelectingCards = IsCardSelectionInProgress();
-
-            if (isGatheringPlayerChoice || isSelectingCards)
-            {
-                ResetToNormalSpeed();
-                return;
-            }
-
-            var hasActiveWork = currentAction != null || (!isQueueEmpty && !isPaused) || isRunning;
-
-            if (!hasActiveWork)
-            {
-                _idleStartTime ??= Time.GetTicksMsec() / 1000.0;
-
-                var currentTime = Time.GetTicksMsec() / 1000.0;
-                var idleElapsed = currentTime - _idleStartTime.Value;
-
-                if (idleElapsed >= IdleBufferDuration) ResetToNormalSpeed();
-                return;
-            }
-
-            _idleStartTime = null;
-
-            _accelerationStartTime ??= Time.GetTicksMsec() / 1000.0;
-
-            var elapsedTime = Time.GetTicksMsec() / 1000.0 - _accelerationStartTime.Value;
-
-            _targetMultiplier = elapsedTime >= TimeThreshold ? CurrentMultiplier : 1.0f;
-        }
-
-        private static bool IsCardSelectionInProgress()
-        {
-            return NPlayerHand.Instance?.IsInCardSelection == true || NOverlayStack.Instance?.Peek() is ICardSelector;
-        }
-
-        private static void ResetToNormalSpeed()
-        {
-            _targetMultiplier = 1.0f;
-            _currentDisplayMultiplier = 1.0f;
-            _accelerationStartTime = null;
-            _transitionStartTime = null;
-            _idleStartTime = null;
-            ApplySpeed();
+            ApplySpeedTransition();
         }
 
         public static void ResetSpeed()
         {
-            _currentDisplayMultiplier = ProgressiveEnabled ? 1.0f : CurrentMultiplier;
-            _targetMultiplier = _currentDisplayMultiplier;
-            _accelerationStartTime = null;
+            EffectiveMultiplier = Settings.AccelerationMode == SpeedAccelerationMode.AlwaysOn
+                ? CurrentMultiplier
+                : NormalMultiplier;
+            _targetMultiplier = EffectiveMultiplier;
+            _transitionStartMultiplier = EffectiveMultiplier;
             _transitionStartTime = null;
+            _safeStateStartTime = null;
             _idleStartTime = null;
             ApplySpeed();
         }
 
-        private static void ApplySpeedTransition(double delta)
+        public static void OnSettingsChanged()
         {
-            if (Mathf.IsEqualApprox(_currentDisplayMultiplier, _targetMultiplier, 0.01f))
-            {
-                _currentDisplayMultiplier = _targetMultiplier;
-                ApplySpeed();
-                return;
-            }
-
-            if (_transitionStartTime == null)
-            {
-                _transitionStartTime = Time.GetTicksMsec() / 1000.0;
-                _transitionStartMultiplier = _currentDisplayMultiplier;
-            }
-
-            var currentTime = Time.GetTicksMsec() / 1000.0;
-            var elapsedTime = currentTime - _transitionStartTime.Value;
-            var progress = (float)Math.Min(elapsedTime / TransitionDuration, 1.0);
-
-            var smoothProgress = progress < 0.5f
-                ? 2f * progress * progress
-                : 1f - Mathf.Pow(-2f * progress + 2f, 2f) / 2f;
-
-            _currentDisplayMultiplier = Mathf.Lerp(_transitionStartMultiplier, _targetMultiplier, smoothProgress);
-            _currentDisplayMultiplier = Mathf.Clamp(_currentDisplayMultiplier, 1.0f, CurrentMultiplier);
-
-            ApplySpeed();
+            NormalizeSettings();
+            ResetSpeed();
         }
 
         public static void ApplySpeed()
         {
-            Engine.TimeScale = EffectiveMultiplier;
+            var value = Mathf.Clamp(EffectiveMultiplier, MinSelectableMultiplier, MaxSelectableMultiplier);
+            if (!Mathf.IsEqualApprox(Engine.TimeScale, value, 0.001f))
+                Engine.TimeScale = value;
+        }
+
+        public static string GetSpeedLabel(int index)
+        {
+            return $"{SpeedValueFromIndex(index):0.#}x";
+        }
+
+        public static void SetSpeedIndex(int index)
+        {
+            if (index < 0 || index >= SpeedOptionCount)
+                return;
+
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
+                data => data.SpeedMultiplier = SpeedValueFromIndex(index));
+            ModDataStore.Save(ModDataStore.SettingsKey);
+            OnSettingsChanged();
+        }
+
+        public static void SetProgressiveEnabled(bool enabled)
+        {
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
+                data => data.ProgressiveAccelerationEnabled = enabled);
+            ModDataStore.Save(ModDataStore.SettingsKey);
+            OnSettingsChanged();
+        }
+
+        public static void SetTransitionDurationIndex(int index)
+        {
+            if (index < 0 || index >= TransitionDurationOptions.Length)
+                return;
+
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
+                data => data.TransitionDuration = TransitionDurationOptions[index]);
+            ModDataStore.Save(ModDataStore.SettingsKey);
+            OnSettingsChanged();
+        }
+
+        public static void SetTimeThresholdIndex(int index)
+        {
+            if (index < 0 || index >= TimeThresholdOptions.Length)
+                return;
+
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
+                data => data.TimeThreshold = TimeThresholdOptions[index]);
+            ModDataStore.Save(ModDataStore.SettingsKey);
+            OnSettingsChanged();
+        }
+
+        private static async Task TrackAsyncCore(Task task, SafeSpeedReason reason)
+        {
+            using var scope = BeginScope(reason);
+            await task.ConfigureAwait(false);
+        }
+
+        private static async Task<T> TrackAsyncCore<T>(Task<T> task, SafeSpeedReason reason)
+        {
+            using var scope = BeginScope(reason);
+            return await task.ConfigureAwait(false);
+        }
+
+        private static void UpdateSafeStateTarget()
+        {
+            if (IsUserInteractionBlockingAcceleration())
+            {
+                ForceNormalSpeed();
+                return;
+            }
+
+            if (!HasAllowedSafeScope())
+            {
+                _idleStartTime ??= Now;
+                if (Now - _idleStartTime.Value >= IdleBufferDuration)
+                    ForceNormalSpeed();
+                return;
+            }
+
+            _idleStartTime = null;
+            if (!Settings.ProgressiveAccelerationEnabled)
+            {
+                _safeStateStartTime = null;
+                SetTarget(CurrentMultiplier, true);
+                return;
+            }
+
+            _safeStateStartTime ??= Now;
+            SetTarget(Now - _safeStateStartTime.Value >= TimeThreshold ? CurrentMultiplier : NormalMultiplier,
+                false);
+        }
+
+        private static bool HasAllowedSafeScope()
+        {
+            return (IsReasonActive(SafeSpeedReason.CardPileSequence) && Settings.AccelerateCardPileSequences)
+                   || (IsReasonActive(SafeSpeedReason.CardPlayResolution) && Settings.AccelerateCardPlayResolution)
+                   || (IsReasonActive(SafeSpeedReason.TurnTransition) && Settings.AccelerateTurnTransitions)
+                   || (IsReasonActive(SafeSpeedReason.EnemyAction) && Settings.AccelerateEnemyActions)
+                   || (IsReasonActive(SafeSpeedReason.TimelineAnimation) && Settings.AccelerateTimelineAnimations)
+                   || (IsReasonActive(SafeSpeedReason.LoadingScreen) && Settings.AccelerateLoadingScreens);
+        }
+
+        private static bool IsReasonActive(SafeSpeedReason reason)
+        {
+            return (ActiveScopes.TryGetValue(reason, out var count) && count > 0)
+                   || (TimedScopes.TryGetValue(reason, out var until) && until > Now);
+        }
+
+        private static bool IsUserInteractionBlockingAcceleration()
+        {
+            if (_localPlayerChoiceDepth > 0)
+                return true;
+
+            return NPlayerHand.Instance?.IsInCardSelection == true
+                   || NOverlayStack.Instance?.Peek() is ICardSelector
+                   || NRun.Instance?.GlobalUi?.TargetManager?.IsInSelection == true;
+        }
+
+        private static void SetTarget(float target, bool immediate)
+        {
+            var lowerBound = Math.Min(NormalMultiplier, CurrentMultiplier);
+            var upperBound = Math.Max(NormalMultiplier, CurrentMultiplier);
+            target = Mathf.Clamp(target, lowerBound, upperBound);
+            if (!Mathf.IsEqualApprox(_targetMultiplier, target, 0.001f))
+            {
+                _targetMultiplier = target;
+                _transitionStartTime = null;
+                _transitionStartMultiplier = EffectiveMultiplier;
+            }
+
+            if (!immediate)
+                return;
+
+            EffectiveMultiplier = target;
+            _transitionStartMultiplier = target;
+            _transitionStartTime = null;
+            if (Mathf.IsEqualApprox(target, NormalMultiplier, 0.001f))
+                _safeStateStartTime = null;
+        }
+
+        private static void ForceNormalSpeed()
+        {
+            _safeStateStartTime = null;
+            _idleStartTime = null;
+            SetTarget(NormalMultiplier, true);
+            ApplySpeed();
+        }
+
+        private static void ApplySpeedTransition()
+        {
+            if (Mathf.IsEqualApprox(EffectiveMultiplier, _targetMultiplier, 0.01f))
+            {
+                EffectiveMultiplier = _targetMultiplier;
+                ApplySpeed();
+                return;
+            }
+
+            if (TransitionDuration <= 0)
+            {
+                EffectiveMultiplier = _targetMultiplier;
+                _transitionStartTime = null;
+                ApplySpeed();
+                return;
+            }
+
+            _transitionStartTime ??= Now;
+            var progress = Mathf.Clamp((float)((Now - _transitionStartTime.Value) / TransitionDuration), 0.0f, 1.0f);
+            var smoothProgress = progress < 0.5f
+                ? 2f * progress * progress
+                : 1f - Mathf.Pow(-2f * progress + 2f, 2f) / 2f;
+
+            EffectiveMultiplier = Mathf.Lerp(_transitionStartMultiplier, _targetMultiplier, smoothProgress);
+            EffectiveMultiplier = Mathf.Clamp(EffectiveMultiplier, MinSelectableMultiplier, MaxSelectableMultiplier);
+            ApplySpeed();
+        }
+
+        private static void CleanupExpiredTimedScopes()
+        {
+            if (TimedScopes.Count == 0)
+                return;
+
+            foreach (var reason in TimedScopes.Where(pair => pair.Value <= Now).Select(pair => pair.Key).ToArray())
+                TimedScopes.Remove(reason);
+        }
+
+        private static void EndScope(SafeSpeedReason reason)
+        {
+            if (!ActiveScopes.TryGetValue(reason, out var count))
+                return;
+
+            if (count <= 1)
+                ActiveScopes.Remove(reason);
+            else
+                ActiveScopes[reason] = count - 1;
+
+            ProcessFrame(0);
+        }
+
+        private static void NormalizeSettings()
+        {
+            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, settings =>
+            {
+                settings.SpeedMultiplier = ClampMultiplier(settings.SpeedMultiplier);
+                settings.SchemaVersion = SpeedSettings.CurrentSchemaVersion;
+                settings.TransitionDuration = Mathf.Clamp(settings.TransitionDuration, 0.0f, 3.0f);
+                settings.TimeThreshold = Mathf.Clamp(settings.TimeThreshold, 0.0f, 2.0f);
+            });
+        }
+
+        private static float ClampMultiplier(float multiplier)
+        {
+            return Mathf.Clamp(multiplier, MinSelectableMultiplier, MaxSelectableMultiplier);
+        }
+
+        private static int SpeedIndexFromValue(float value)
+        {
+            return Math.Clamp((int)MathF.Round((ClampMultiplier(value) - MinSelectableMultiplier) / SpeedSliderStep),
+                0,
+                SpeedOptionCount - 1);
+        }
+
+        private static float SpeedValueFromIndex(int index)
+        {
+            return Mathf.Clamp(MinSelectableMultiplier + index * SpeedSliderStep,
+                MinSelectableMultiplier,
+                MaxSelectableMultiplier);
+        }
+
+        private static int IndexOfClosest(float[] values, float value)
+        {
+            var bestIndex = 0;
+            var bestDistance = float.MaxValue;
+            for (var i = 0; i < values.Length; i++)
+            {
+                var distance = Math.Abs(values[i] - value);
+                if (distance >= bestDistance)
+                    continue;
+
+                bestIndex = i;
+                bestDistance = distance;
+            }
+
+            return bestIndex;
+        }
+
+        private sealed class SpeedScope(SafeSpeedReason reason) : IDisposable
+        {
+            private bool _disposed;
+
+            public void Dispose()
+            {
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                EndScope(reason);
+            }
         }
     }
 }

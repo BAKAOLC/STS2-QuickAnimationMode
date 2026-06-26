@@ -16,7 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="all"/>
-        <PackageReference Include="STS2.RitsuLib" Version="0.0.1" />
+        <ProjectReference Include="..\sts-2-ritsulib\STS2-RitsuLib.csproj" Private="False"/>
     </ItemGroup>
 
     <ItemGroup>

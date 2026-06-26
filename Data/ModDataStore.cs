@@ -20,7 +20,15 @@ namespace STS2QuickAnimationMode.Data
                     Const.SettingsFileName,
                     SaveScope.Global,
                     () => new(),
-                    true
+                    true,
+                    new()
+                    {
+                        CurrentDataVersion = SpeedSettings.CurrentSchemaVersion,
+                        MinimumSupportedDataVersion = 0,
+                    },
+                    [
+                        new SpeedSettingsV0ToV1Migration(),
+                    ]
                 );
             }
         }
