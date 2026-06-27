@@ -1,70 +1,57 @@
 using MegaCrit.Sts2.Core.Nodes.Screens.Timeline;
-using MegaCrit.Sts2.Core.Nodes.Screens.Timeline.UnlockScreens;
-using MegaCrit.Sts2.Core.Timeline;
 using STS2QuickAnimationMode.Utils;
 using STS2RitsuLib.Patching.Models;
 
 namespace STS2QuickAnimationMode.Patches
 {
-    public class TimelineTaskSpeedScopePatch : IPatchMethod
+    internal static class TimelineScreenSpeedScopeState
     {
-        public static string PatchId => "safe_speed_timeline_task_animations";
-        public static string Description => "Accelerate safe timeline task-based animations";
-        public static bool IsCritical => false;
+        private static IDisposable? _scope;
 
-        public static ModPatchTarget[] GetTargets()
+        public static void Begin()
         {
-            return
-            [
-                new(typeof(NTimelineScreen), nameof(NTimelineScreen.SpawnFirstTimeTimeline), Type.EmptyTypes, true),
-                new(typeof(NTimelineScreen), nameof(NTimelineScreen.AddEpochSlots),
-                    [typeof(List<EpochSlotData>), typeof(bool)], true),
-                new(typeof(NEpochSlot), nameof(NEpochSlot.SpawnSlot), Type.EmptyTypes, true),
-                new(typeof(NEpochInspectScreen), nameof(NEpochInspectScreen.Open),
-                    [typeof(NEpochSlot), typeof(EpochModel), typeof(bool)], true),
-                new(typeof(NEpochInspectScreen), nameof(NEpochInspectScreen.UnlockAnimation), [typeof(EpochModel)],
-                    true),
-                new(typeof(NUnlockScreen), "Close", Type.EmptyTypes, true),
-            ];
+            _scope ??= SpeedManager.BeginScope(SafeSpeedReason.TimelineAnimation);
         }
 
-        public static void Postfix(ref Task __result)
+        public static void End()
         {
-            __result = SpeedManager.TrackAsync(__result, SafeSpeedReason.TimelineAnimation);
+            _scope?.Dispose();
+            _scope = null;
+            SpeedManager.ClearReason(SafeSpeedReason.TimelineAnimation);
         }
     }
 
-    public class TimelineUnlockScreenOpenSpeedScopePatch : IPatchMethod
+    public class TimelineScreenOpenSpeedScopePatch : IPatchMethod
     {
-        public static string PatchId => "safe_speed_timeline_unlock_screen_open";
-        public static string Description => "Accelerate safe timeline unlock screen opening animations";
+        public static string PatchId => "safe_speed_timeline_screen_open";
+        public static string Description => "Accelerate while the timeline screen is open";
         public static bool IsCritical => false;
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(NUnlockScreen), nameof(NUnlockScreen.Open), Type.EmptyTypes, true)];
+            return [new(typeof(NTimelineScreen), nameof(NTimelineScreen.OnSubmenuOpened), Type.EmptyTypes)];
         }
 
         public static void Postfix()
         {
-            SpeedManager.ActivateTimed(SafeSpeedReason.TimelineAnimation);
+            TimelineScreenSpeedScopeState.Begin();
         }
     }
 
-    public class TimelineProcessSpeedPatch : IPatchMethod
+    public class TimelineScreenCloseSpeedScopePatch : IPatchMethod
     {
-        public static string PatchId => "safe_speed_timeline_process";
-        public static string Description => "Process speed transitions while the timeline screen is active";
+        public static string PatchId => "safe_speed_timeline_screen_close";
+        public static string Description => "Clear timeline acceleration when leaving the timeline screen";
         public static bool IsCritical => false;
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(NSlotsContainer), "_Process", [typeof(double)], true)];
+            return [new(typeof(NTimelineScreen), nameof(NTimelineScreen.OnSubmenuClosed), Type.EmptyTypes)];
         }
 
-        public static void Postfix(double delta)
+        public static void Postfix()
         {
-            SpeedManager.ProcessFrame(delta);
+            TimelineScreenSpeedScopeState.End();
         }
     }
 }

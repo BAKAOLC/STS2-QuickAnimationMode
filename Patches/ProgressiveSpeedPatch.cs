@@ -5,25 +5,25 @@ using STS2RitsuLib.Patching.Models;
 namespace STS2QuickAnimationMode.Patches
 {
     /// <summary>
-    ///     Patches the game's main process loop to update progressive speed transitions.
+    ///     Installs a mod-owned process pump under NGame so speed state is updated in every game scene.
     /// </summary>
-    public class ProgressiveSpeedPatch : IPatchMethod
+    public class SpeedProcessPumpInstallPatch : IPatchMethod
     {
-        public static string PatchId => "progressive_speed_process";
-        public static string Description => "Process progressive speed transitions each frame";
+        public static string PatchId => "speed_process_pump_install";
+        public static string Description => "Install persistent speed process pump";
         public static bool IsCritical => false;
 
         public static ModPatchTarget[] GetTargets()
         {
             return
             [
-                new(typeof(NRun), "_Process", [typeof(double)]),
+                new(typeof(NGame), "_Ready", Type.EmptyTypes),
             ];
         }
 
-        public static void Postfix(double delta)
+        public static void Postfix()
         {
-            SpeedManager.ProcessFrame(delta);
+            SpeedManager.EnsureProcessPump();
         }
     }
 }

@@ -1,8 +1,4 @@
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
-using MegaCrit.Sts2.Core.Nodes.Screens.CustomRun;
-using MegaCrit.Sts2.Core.Nodes.Screens.DailyRun;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using STS2QuickAnimationMode.Utils;
@@ -27,43 +23,28 @@ namespace STS2QuickAnimationMode.Patches
         }
     }
 
-    public class AssetLoadingSpeedScopePatch : IPatchMethod
+    public class TransitionSpeedScopePatch : IPatchMethod
     {
-        public static string PatchId => "safe_speed_asset_loading";
-        public static string Description => "Accelerate safe background asset loading";
-        public static bool IsCritical => false;
-
-        public static ModPatchTarget[] GetTargets()
-        {
-            return [new(typeof(NAssetLoader), nameof(NAssetLoader.LoadInTheBackground), [typeof(AssetLoadingSession)])];
-        }
-
-        public static void Postfix(ref Task<bool> __result)
-        {
-            __result = SpeedManager.TrackAsync(__result, SafeSpeedReason.LoadingScreen);
-        }
-    }
-
-    public class LoadingProcessSpeedPatch : IPatchMethod
-    {
-        public static string PatchId => "safe_speed_loading_process";
-        public static string Description => "Process speed transitions while loading screens are active";
+        public static string PatchId => "safe_speed_transitions";
+        public static string Description => "Accelerate screen and room transition sequences";
         public static bool IsCritical => false;
 
         public static ModPatchTarget[] GetTargets()
         {
             return
             [
-                new(typeof(NAssetLoader), "_Process", [typeof(double)]),
-                new(typeof(NMultiplayerLoadGameScreen), "_Process", [typeof(double)], true),
-                new(typeof(NCustomRunLoadScreen), "_Process", [typeof(double)], true),
-                new(typeof(NDailyRunLoadScreen), "_Process", [typeof(double)], true),
+                new(typeof(NTransition), nameof(NTransition.FadeOut),
+                    [typeof(float), typeof(string), typeof(CancellationToken?)]),
+                new(typeof(NTransition), nameof(NTransition.FadeIn),
+                    [typeof(float), typeof(string), typeof(CancellationToken?)]),
+                new(typeof(NTransition), nameof(NTransition.RoomFadeOut), Type.EmptyTypes),
+                new(typeof(NTransition), nameof(NTransition.RoomFadeIn), [typeof(bool)]),
             ];
         }
 
-        public static void Postfix(double delta)
+        public static void Postfix(ref Task __result)
         {
-            SpeedManager.ProcessFrame(delta);
+            __result = SpeedManager.TrackAsync(__result, SafeSpeedReason.LoadingScreen);
         }
     }
 }

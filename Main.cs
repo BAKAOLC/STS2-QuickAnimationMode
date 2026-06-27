@@ -60,8 +60,7 @@ namespace STS2QuickAnimationMode
         {
             patcher.RegisterPatch<SettingsScreenPatch>();
             patcher.RegisterPatch<HitStopPatch>();
-            patcher.RegisterPatch<ProgressiveSpeedPatch>();
-            patcher.RegisterPatch<TimelineProcessSpeedPatch>();
+            patcher.RegisterPatch<SpeedProcessPumpInstallPatch>();
             patcher.RegisterPatch<CardPileDrawSingleSpeedScopePatch>();
             patcher.RegisterPatch<CardPileDrawManySpeedScopePatch>();
             patcher.RegisterPatch<CardPileShuffleSpeedScopePatch>();
@@ -71,11 +70,10 @@ namespace STS2QuickAnimationMode
             patcher.RegisterPatch<CardExhaustSpeedScopePatch>();
             patcher.RegisterPatch<CombatTurnTransitionSpeedScopePatch>();
             patcher.RegisterPatch<EnemyActionSpeedScopePatch>();
-            patcher.RegisterPatch<TimelineTaskSpeedScopePatch>();
-            patcher.RegisterPatch<TimelineUnlockScreenOpenSpeedScopePatch>();
+            patcher.RegisterPatch<TimelineScreenOpenSpeedScopePatch>();
+            patcher.RegisterPatch<TimelineScreenCloseSpeedScopePatch>();
             patcher.RegisterPatch<RunLoadingSpeedScopePatch>();
-            patcher.RegisterPatch<AssetLoadingSpeedScopePatch>();
-            patcher.RegisterPatch<LoadingProcessSpeedPatch>();
+            patcher.RegisterPatch<TransitionSpeedScopePatch>();
             patcher.RegisterPatch<GameActionLocalPlayerChoiceSpeedGuardPatch>();
             patcher.RegisterPatch<HookLocalPlayerChoiceSpeedGuardPatch>();
             patcher.RegisterPatch<RunCleanupPatch>();

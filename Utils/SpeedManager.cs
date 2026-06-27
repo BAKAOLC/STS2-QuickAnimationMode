@@ -63,6 +63,7 @@ namespace STS2QuickAnimationMode.Utils
         {
             NormalizeSettings();
             ResetSpeed();
+            EnsureProcessPump();
             Main.Logger.Info(
                 $"SpeedManager initialized, mode: {Settings.AccelerationMode}, multiplier: {CurrentMultiplier}x");
         }
@@ -95,6 +96,22 @@ namespace STS2QuickAnimationMode.Utils
                 TimedScopes[reason] = until;
 
             ProcessFrame(0);
+        }
+
+        public static void ClearReason(SafeSpeedReason reason)
+        {
+            ActiveScopes.Remove(reason);
+            TimedScopes.Remove(reason);
+            ProcessFrame(0);
+        }
+
+        public static void EnsureProcessPump()
+        {
+            var game = NGame.Instance;
+            if (game == null || game.GetNodeOrNull<SpeedProcessPump>(SpeedProcessPump.NodeName) != null)
+                return;
+
+            game.AddChild(new SpeedProcessPump());
         }
 
         public static void BeginLocalPlayerChoice()
