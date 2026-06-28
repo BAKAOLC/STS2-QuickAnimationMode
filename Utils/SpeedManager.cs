@@ -231,13 +231,27 @@ namespace STS2QuickAnimationMode.Utils
         private static async Task TrackAsyncCore(Task task, SafeSpeedReason reason)
         {
             using var scope = BeginScope(reason);
-            await task.ConfigureAwait(false);
+            try
+            {
+                await task;
+            }
+            finally
+            {
+                RequestHandRepairForReason(reason);
+            }
         }
 
         private static async Task<T> TrackAsyncCore<T>(Task<T> task, SafeSpeedReason reason)
         {
             using var scope = BeginScope(reason);
-            return await task.ConfigureAwait(false);
+            try
+            {
+                return await task;
+            }
+            finally
+            {
+                RequestHandRepairForReason(reason);
+            }
         }
 
         private static void UpdateSafeStateTarget()
@@ -277,6 +291,12 @@ namespace STS2QuickAnimationMode.Utils
                    || (IsReasonActive(SafeSpeedReason.EnemyAction) && Settings.AccelerateEnemyActions)
                    || (IsReasonActive(SafeSpeedReason.TimelineAnimation) && Settings.AccelerateTimelineAnimations)
                    || (IsReasonActive(SafeSpeedReason.LoadingScreen) && Settings.AccelerateLoadingScreens);
+        }
+
+        private static void RequestHandRepairForReason(SafeSpeedReason reason)
+        {
+            if (reason is SafeSpeedReason.CardPileSequence or SafeSpeedReason.CardPlayResolution)
+                HandStateRepair.RequestFullRepair();
         }
 
         private static bool IsReasonActive(SafeSpeedReason reason)

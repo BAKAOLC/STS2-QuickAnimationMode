@@ -15,6 +15,7 @@ namespace STS2QuickAnimationMode.Utils
         public override void _Process(double delta)
         {
             SpeedManager.ProcessFrame(delta);
+            HandStateRepair.ProcessFrame();
         }
     }
 }

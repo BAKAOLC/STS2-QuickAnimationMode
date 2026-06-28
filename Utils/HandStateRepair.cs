@@ -1,0 +1,221 @@
+using Godot;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.UI;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
+
+namespace STS2QuickAnimationMode.Utils
+{
+    internal static class HandStateRepair
+    {
+        private const int DeferredRepairFrames = 2;
+        private static int _pendingRepairFrames;
+        private static bool _shouldCancelStaleTargeting;
+
+        public static void RequestFullRepair(bool cancelStaleTargeting = false)
+        {
+            _pendingRepairFrames = Math.Max(_pendingRepairFrames, DeferredRepairFrames);
+            _shouldCancelStaleTargeting |= cancelStaleTargeting;
+        }
+
+        public static Task RepairAfterAsync(Task task)
+        {
+            return RepairAfterAsyncCore(task);
+        }
+
+        public static Task<T> RepairAfterAsync<T>(Task<T> task)
+        {
+            return RepairAfterAsyncCore(task);
+        }
+
+        public static void ProcessFrame()
+        {
+            if (_pendingRepairFrames <= 0)
+                return;
+
+            _pendingRepairFrames--;
+            if (_pendingRepairFrames <= 0)
+                RepairLocalHand();
+        }
+
+        public static void NormalizeHandCard(NCard? card, NHandCardHolder? holder, bool resetHolderInteraction = false)
+        {
+            try
+            {
+                if (card == null || !GodotObject.IsInstanceValid(card))
+                    return;
+
+                if (card.PlayPileTween != null && GodotObject.IsInstanceValid(card.PlayPileTween))
+                    card.PlayPileTween.Kill();
+
+                card.PlayPileTween = null;
+                card.Visible = true;
+                card.Modulate = Colors.White;
+                card.Scale = Vector2.One;
+                card.Rotation = 0f;
+                card.Visibility = ModelVisibility.Visible;
+                card.SetPretendCardCanBePlayed(false);
+                card.SetForceUnpoweredPreview(false);
+
+                if (card.IsNodeReady() && GodotObject.IsInstanceValid(card.Body))
+                {
+                    card.Body.Visible = true;
+                    card.Body.Modulate = Colors.White;
+                    card.Body.Scale = Vector2.One;
+                }
+
+                if (card.IsNodeReady())
+                {
+                    card.SetPreviewTarget(null);
+                    card.UpdateVisuals(PileType.Hand, CardPreviewMode.Normal);
+                }
+
+                if (holder == null || !GodotObject.IsInstanceValid(holder))
+                    return;
+
+                if (resetHolderInteraction)
+                {
+                    holder.Visible = true;
+                    holder.Modulate = Colors.White;
+                    holder.Hitbox.MouseFilter = Control.MouseFilterEnum.Stop;
+                    holder.Hitbox.SetEnabled(true);
+                }
+
+                holder.UpdateCard();
+            }
+            catch (Exception ex)
+            {
+                Main.Logger.Error($"Hand state repair failed: {ex}");
+            }
+        }
+
+        private static async Task RepairAfterAsyncCore(Task task)
+        {
+            try
+            {
+                await task;
+            }
+            finally
+            {
+                RequestFullRepair();
+            }
+        }
+
+        private static async Task<T> RepairAfterAsyncCore<T>(Task<T> task)
+        {
+            try
+            {
+                return await task;
+            }
+            finally
+            {
+                RequestFullRepair();
+            }
+        }
+
+        private static void RepairLocalHand()
+        {
+            var shouldCancelStaleTargeting = _shouldCancelStaleTargeting;
+            _shouldCancelStaleTargeting = false;
+
+            try
+            {
+                if (!Main.IsModActive || CombatManager.Instance?.IsInProgress != true)
+                    return;
+
+                var hand = NPlayerHand.Instance;
+                var state = CombatManager.Instance.DebugOnlyGetState();
+                var player = LocalContext.GetMe(state);
+                if (hand == null || player == null || hand.CurrentMode != NPlayerHand.Mode.Play || hand.InCardPlay)
+                    return;
+
+                if (shouldCancelStaleTargeting)
+                    CancelStaleTargeting();
+
+                var handPile = PileType.Hand.GetPile(player);
+                var handCards = handPile.Cards.ToList();
+                RemoveStaleVisibleHolders(hand, handCards);
+
+                var desiredIndex = 0;
+                foreach (var card in handCards)
+                {
+                    var holder = EnsureHandHolder(hand, card, desiredIndex);
+                    if (holder == null)
+                        continue;
+
+                    if (holder.GetParent() == hand.CardHolderContainer)
+                        hand.CardHolderContainer.MoveChildSafely(holder, desiredIndex);
+
+                    NormalizeHandCard(holder.CardNode, holder, true);
+                    desiredIndex++;
+                }
+
+                hand.ForceRefreshCardIndices();
+            }
+            catch (Exception ex)
+            {
+                Main.Logger.Error($"Full hand state repair failed: {ex}");
+            }
+        }
+
+        private static NHandCardHolder? EnsureHandHolder(NPlayerHand hand, CardModel card, int desiredIndex)
+        {
+            if (hand.GetCardHolder(card) is NHandCardHolder awaitingHolder && hand.IsAwaitingPlay(awaitingHolder))
+                hand.TryCancelCardPlay(card);
+
+            if (hand.GetCardHolder(card) is NHandCardHolder holder)
+            {
+                if (holder.GetParent() != hand.CardHolderContainer)
+                {
+                    holder.Reparent(hand.CardHolderContainer);
+                    holder.SetDefaultTargets();
+                }
+
+                return holder;
+            }
+
+            var cardNode = NCard.FindOnTable(card);
+            var playQueue = NCombatRoom.Instance?.Ui.PlayQueue;
+            if (cardNode != null && playQueue?.GetCardNode(card) == cardNode)
+            {
+                playQueue.RemoveCardFromQueueForCancellation(cardNode, true);
+                return hand.GetCardHolder(card) as NHandCardHolder;
+            }
+
+            cardNode ??= NCard.Create(card);
+            return cardNode == null ? null : hand.Add(cardNode, desiredIndex);
+        }
+
+        private static void RemoveStaleVisibleHolders(NPlayerHand hand, IReadOnlyCollection<CardModel> handCards)
+        {
+            foreach (var holder in hand.CardHolderContainer.GetChildren().OfType<NHandCardHolder>().ToList())
+            {
+                var card = holder.CardNode?.Model;
+                if (card != null && handCards.Contains(card) && card.Pile?.Type == PileType.Hand)
+                    continue;
+
+                hand.RemoveCardHolder(holder);
+            }
+        }
+
+        private static void CancelStaleTargeting()
+        {
+            try
+            {
+                var targetManager = NTargetManager.Instance;
+                if (targetManager.IsInSelection)
+                    targetManager.CancelTargeting();
+            }
+            catch
+            {
+                // Target manager is not available outside run scenes.
+            }
+        }
+    }
+}
