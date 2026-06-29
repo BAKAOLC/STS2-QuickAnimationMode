@@ -16,12 +16,10 @@ namespace STS2QuickAnimationMode.Utils
     {
         private const int DeferredRepairFrames = 2;
         private static int _pendingRepairFrames;
-        private static bool _shouldCancelStaleTargeting;
 
-        public static void RequestFullRepair(bool cancelStaleTargeting = false)
+        public static void RequestFullRepair()
         {
             _pendingRepairFrames = Math.Max(_pendingRepairFrames, DeferredRepairFrames);
-            _shouldCancelStaleTargeting |= cancelStaleTargeting;
         }
 
         public static Task RepairAfterAsync(Task task)
@@ -121,9 +119,6 @@ namespace STS2QuickAnimationMode.Utils
 
         private static void RepairLocalHand()
         {
-            var shouldCancelStaleTargeting = _shouldCancelStaleTargeting;
-            _shouldCancelStaleTargeting = false;
-
             try
             {
                 if (!Main.IsModActive || CombatManager.Instance?.IsInProgress != true)
@@ -134,9 +129,6 @@ namespace STS2QuickAnimationMode.Utils
                 var player = LocalContext.GetMe(state);
                 if (hand == null || player == null || hand.CurrentMode != NPlayerHand.Mode.Play || hand.InCardPlay)
                     return;
-
-                if (shouldCancelStaleTargeting)
-                    CancelStaleTargeting();
 
                 var handPile = PileType.Hand.GetPile(player);
                 var handCards = handPile.Cards.ToList();
@@ -201,20 +193,6 @@ namespace STS2QuickAnimationMode.Utils
                     continue;
 
                 hand.RemoveCardHolder(holder);
-            }
-        }
-
-        private static void CancelStaleTargeting()
-        {
-            try
-            {
-                var targetManager = NTargetManager.Instance;
-                if (targetManager.IsInSelection)
-                    targetManager.CancelTargeting();
-            }
-            catch
-            {
-                // Target manager is not available outside run scenes.
             }
         }
     }

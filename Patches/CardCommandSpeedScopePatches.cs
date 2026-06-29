@@ -13,7 +13,11 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(CardCmd), nameof(CardCmd.Discard), [typeof(PlayerChoiceContext), typeof(CardModel)])];
+            return
+            [
+                new(typeof(CardCmd), nameof(CardCmd.Discard),
+                    [typeof(PlayerChoiceContext), typeof(CardModel)]),
+            ];
         }
 
         public static void Postfix(ref Task __result)

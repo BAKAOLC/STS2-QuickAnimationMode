@@ -14,7 +14,11 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(CardPileCmd), nameof(CardPileCmd.Draw), [typeof(PlayerChoiceContext), typeof(Player)])];
+            return
+            [
+                new(typeof(CardPileCmd), nameof(CardPileCmd.Draw),
+                    [typeof(PlayerChoiceContext), typeof(Player)]),
+            ];
         }
 
         public static void Postfix(ref Task<CardModel?> __result)
@@ -52,7 +56,8 @@ namespace STS2QuickAnimationMode.Patches
         {
             return
             [
-                new(typeof(CardPileCmd), nameof(CardPileCmd.Shuffle), [typeof(PlayerChoiceContext), typeof(Player)]),
+                new(typeof(CardPileCmd), nameof(CardPileCmd.Shuffle),
+                    [typeof(PlayerChoiceContext), typeof(Player)]),
                 new(typeof(CardPileCmd), nameof(CardPileCmd.ShuffleIfNecessary),
                     [typeof(PlayerChoiceContext), typeof(Player)]),
             ];

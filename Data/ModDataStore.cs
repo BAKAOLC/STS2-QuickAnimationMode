@@ -15,11 +15,11 @@ namespace STS2QuickAnimationMode.Data
         {
             using (RitsuLibFramework.BeginModDataRegistration(Const.ModId))
             {
-                Store.Register<SpeedSettings>(
+                Store.Register(
                     SettingsKey,
                     Const.SettingsFileName,
                     SaveScope.Global,
-                    () => new(),
+                    () => new SpeedSettings(),
                     true,
                     new()
                     {

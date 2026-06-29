@@ -66,6 +66,9 @@ namespace STS2QuickAnimationMode
             patcher.RegisterPatch<CardPlayCleanupStateRepairPatch>();
             patcher.RegisterPatch<CardPileAddSingleStateRepairPatch>();
             patcher.RegisterPatch<CardPileAddManyStateRepairPatch>();
+            patcher.RegisterPatch<HandTargetPositionStabilizationPatch>();
+            patcher.RegisterPatch<HandTargetAngleStabilizationPatch>();
+            patcher.RegisterPatch<HandTargetScaleStabilizationPatch>();
             patcher.RegisterPatch<CardPileDrawSingleSpeedScopePatch>();
             patcher.RegisterPatch<CardPileDrawManySpeedScopePatch>();
             patcher.RegisterPatch<CardPileShuffleSpeedScopePatch>();

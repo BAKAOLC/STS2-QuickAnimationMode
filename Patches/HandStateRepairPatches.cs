@@ -58,7 +58,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static void Postfix()
         {
-            HandStateRepair.RequestFullRepair(true);
+            HandStateRepair.RequestFullRepair();
         }
     }
 

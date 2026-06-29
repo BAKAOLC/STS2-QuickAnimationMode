@@ -1,7 +1,6 @@
 using System.Reflection;
 using Godot;
 using MegaCrit.Sts2.Core.HoverTips;
-using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
 
@@ -12,9 +11,10 @@ namespace STS2QuickAnimationMode.Patches
         private static readonly MethodInfo? HoverTipTitleSetter =
             typeof(HoverTip).GetProperty(nameof(HoverTip.Title))?.GetSetMethod(true);
 
-        private IHoverTip? _hoverTip;
-        private string? _descriptionKey;
         private string? _descriptionFallback;
+        private string? _descriptionKey;
+
+        private IHoverTip? _hoverTip;
         private string? _titleFallback;
         private string? _titleKey;
 
@@ -24,12 +24,10 @@ namespace STS2QuickAnimationMode.Patches
             Connect(Control.SignalName.MouseExited, Callable.From(OnUnhovered));
 
             if (_titleKey != null && _descriptionKey != null)
-            {
                 _hoverTip = CreateHoverTip(
                     Main.I18N.Get(_titleKey, _titleFallback ?? _titleKey),
                     Main.I18N.Get(_descriptionKey, _descriptionFallback ?? _descriptionKey)
                 );
-            }
         }
 
         public void SetHoverTipKeys(
@@ -46,9 +44,9 @@ namespace STS2QuickAnimationMode.Patches
 
         private static HoverTip CreateHoverTip(string title, string description)
         {
-            var hoverTip = new HoverTip(new LocString("settings_ui", "FASTMODE"), description)
+            var hoverTip = new HoverTip(new("settings_ui", "FASTMODE"), description)
             {
-                Id = $"{Const.ModId}.settings.{title}"
+                Id = $"{Const.ModId}.settings.{title}",
             };
 
             if (HoverTipTitleSetter == null)
@@ -64,7 +62,8 @@ namespace STS2QuickAnimationMode.Patches
             if (_hoverTip == null)
                 return;
 
-            NHoverTipSet.CreateAndShow(this, _hoverTip)?.SetGlobalPosition(GlobalPosition + NSettingsScreen.settingTipsOffset);
+            NHoverTipSet.CreateAndShow(this, _hoverTip)
+                ?.SetGlobalPosition(GlobalPosition + NSettingsScreen.settingTipsOffset);
         }
 
         private void OnUnhovered()

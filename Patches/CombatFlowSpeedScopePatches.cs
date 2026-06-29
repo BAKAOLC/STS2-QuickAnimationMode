@@ -16,10 +16,14 @@ namespace STS2QuickAnimationMode.Patches
             [
                 new(typeof(CombatManager), "StartTurn", [typeof(Func<Task>)], true),
                 new(typeof(CombatManager), "AfterAllPlayersReadyToEndTurn", [typeof(Func<Task>)], true),
-                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseOneInternal), Type.EmptyTypes),
-                new(typeof(CombatManager), "AfterAllPlayersReadyToBeginEnemyTurn", [typeof(Func<Task>)], true),
-                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseTwoInternal), Type.EmptyTypes),
-                new(typeof(CombatManager), nameof(CombatManager.SwitchFromPlayerToEnemySide), [typeof(Func<Task>)]),
+                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseOneInternal),
+                    Type.EmptyTypes),
+                new(typeof(CombatManager), "AfterAllPlayersReadyToBeginEnemyTurn", [typeof(Func<Task>)],
+                    true),
+                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseTwoInternal),
+                    Type.EmptyTypes),
+                new(typeof(CombatManager), nameof(CombatManager.SwitchFromPlayerToEnemySide),
+                    [typeof(Func<Task>)]),
                 new(typeof(CombatManager), "EndEnemyTurn", Type.EmptyTypes, true),
                 new(typeof(CombatManager), "EndEnemyTurnInternal", Type.EmptyTypes, true),
             ];
