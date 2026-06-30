@@ -23,14 +23,12 @@ namespace STS2QuickAnimationMode.Utils
         public const float MinSelectableMultiplier = 0.1f;
         public const float MaxSelectableMultiplier = 10.0f;
         public const float SpeedSliderStep = 0.1f;
+        public const float MinTimeThreshold = 0.0f;
+        public const float MaxTimeThreshold = 10.0f;
+        public const float MinTransitionDuration = 0.0f;
+        public const float MaxTransitionDuration = 20.0f;
         private const float DefaultTimelineScopeSeconds = 2.0f;
         private const float IdleBufferDuration = 0.1f;
-
-        public static readonly float[] TransitionDurationOptions = [0.0f, 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 3.0f];
-        public static readonly string[] TransitionDurationLabels = ["0s", "0.1s", "0.2s", "0.5s", "1s", "2s", "3s"];
-
-        public static readonly float[] TimeThresholdOptions = [0.0f, 0.05f, 0.1f, 0.25f, 0.5f, 1.0f, 2.0f];
-        public static readonly string[] TimeThresholdLabels = ["0s", "0.05s", "0.1s", "0.25s", "0.5s", "1s", "2s"];
 
         private static readonly Dictionary<SafeSpeedReason, int> ActiveScopes = new();
         private static readonly Dictionary<SafeSpeedReason, double> TimedScopes = new();
@@ -45,17 +43,9 @@ namespace STS2QuickAnimationMode.Utils
         private static SpeedSettings Settings => ModDataStore.Get<SpeedSettings>(ModDataStore.SettingsKey);
 
         public static float CurrentMultiplier => ClampMultiplier(Settings.SpeedMultiplier);
-        public static bool ProgressiveEnabled => Settings.ProgressiveAccelerationEnabled;
         public static float TransitionDuration => Math.Max(0.0f, Settings.TransitionDuration);
         public static float TimeThreshold => Math.Max(0.0f, Settings.TimeThreshold);
         public static float EffectiveMultiplier { get; private set; } = NormalMultiplier;
-
-        public static int SpeedOptionCount => (int)MathF.Round((MaxSelectableMultiplier - MinSelectableMultiplier) /
-                                                               SpeedSliderStep) + 1;
-
-        public static int CurrentIndex => SpeedIndexFromValue(CurrentMultiplier);
-        public static int TransitionDurationIndex => IndexOfClosest(TransitionDurationOptions, TransitionDuration);
-        public static int TimeThresholdIndex => IndexOfClosest(TimeThresholdOptions, TimeThreshold);
 
         private static double Now => Time.GetTicksMsec() / 1000.0;
 
@@ -180,52 +170,6 @@ namespace STS2QuickAnimationMode.Utils
             var value = Mathf.Clamp(EffectiveMultiplier, MinSelectableMultiplier, MaxSelectableMultiplier);
             if (!Mathf.IsEqualApprox(Engine.TimeScale, value, 0.001f))
                 Engine.TimeScale = value;
-        }
-
-        public static string GetSpeedLabel(int index)
-        {
-            return $"{SpeedValueFromIndex(index):0.#}x";
-        }
-
-        public static void SetSpeedIndex(int index)
-        {
-            if (index < 0 || index >= SpeedOptionCount)
-                return;
-
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
-                data => data.SpeedMultiplier = SpeedValueFromIndex(index));
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            OnSettingsChanged();
-        }
-
-        public static void SetProgressiveEnabled(bool enabled)
-        {
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
-                data => data.ProgressiveAccelerationEnabled = enabled);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            OnSettingsChanged();
-        }
-
-        public static void SetTransitionDurationIndex(int index)
-        {
-            if (index < 0 || index >= TransitionDurationOptions.Length)
-                return;
-
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
-                data => data.TransitionDuration = TransitionDurationOptions[index]);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            OnSettingsChanged();
-        }
-
-        public static void SetTimeThresholdIndex(int index)
-        {
-            if (index < 0 || index >= TimeThresholdOptions.Length)
-                return;
-
-            ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey,
-                data => data.TimeThreshold = TimeThresholdOptions[index]);
-            ModDataStore.Save(ModDataStore.SettingsKey);
-            OnSettingsChanged();
         }
 
         private static async Task TrackAsyncCore(Task task, SafeSpeedReason reason)
@@ -401,45 +345,17 @@ namespace STS2QuickAnimationMode.Utils
             {
                 settings.SpeedMultiplier = ClampMultiplier(settings.SpeedMultiplier);
                 settings.SchemaVersion = SpeedSettings.CurrentSchemaVersion;
-                settings.TransitionDuration = Mathf.Clamp(settings.TransitionDuration, 0.0f, 3.0f);
-                settings.TimeThreshold = Mathf.Clamp(settings.TimeThreshold, 0.0f, 2.0f);
+                settings.TransitionDuration = Mathf.Clamp(
+                    settings.TransitionDuration,
+                    MinTransitionDuration,
+                    MaxTransitionDuration);
+                settings.TimeThreshold = Mathf.Clamp(settings.TimeThreshold, MinTimeThreshold, MaxTimeThreshold);
             });
         }
 
         private static float ClampMultiplier(float multiplier)
         {
             return Mathf.Clamp(multiplier, MinSelectableMultiplier, MaxSelectableMultiplier);
-        }
-
-        private static int SpeedIndexFromValue(float value)
-        {
-            return Math.Clamp((int)MathF.Round((ClampMultiplier(value) - MinSelectableMultiplier) / SpeedSliderStep),
-                0,
-                SpeedOptionCount - 1);
-        }
-
-        private static float SpeedValueFromIndex(int index)
-        {
-            return Mathf.Clamp(MinSelectableMultiplier + index * SpeedSliderStep,
-                MinSelectableMultiplier,
-                MaxSelectableMultiplier);
-        }
-
-        private static int IndexOfClosest(float[] values, float value)
-        {
-            var bestIndex = 0;
-            var bestDistance = float.MaxValue;
-            for (var i = 0; i < values.Length; i++)
-            {
-                var distance = Math.Abs(values[i] - value);
-                if (distance >= bestDistance)
-                    continue;
-
-                bestIndex = i;
-                bestDistance = distance;
-            }
-
-            return bestIndex;
         }
 
         private sealed class SpeedScope(SafeSpeedReason reason) : IDisposable

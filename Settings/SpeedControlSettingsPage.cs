@@ -22,7 +22,8 @@ namespace STS2QuickAnimationMode.Settings
                             "mode",
                             T("MODE", "Mode"),
                             Bind("mode", settings => settings.AccelerationMode,
-                                (settings, value) => settings.AccelerationMode = value),
+                                (settings, value) => settings.AccelerationMode = value,
+                                () => SpeedSettings.DefaultAccelerationMode),
                             [
                                 new(SpeedAccelerationMode.SafeState,
                                     T("MODE_SAFE_STATE", "Safe state acceleration")),
@@ -38,7 +39,8 @@ namespace STS2QuickAnimationMode.Settings
                             "speed_multiplier",
                             T("SPEED_MULTIPLIER", "Speed Multiplier"),
                             BindDouble("speed_multiplier", settings => settings.SpeedMultiplier,
-                                (settings, value) => settings.SpeedMultiplier = (float)value),
+                                (settings, value) => settings.SpeedMultiplier = (float)value,
+                                () => SpeedSettings.DefaultSpeedMultiplier),
                             SpeedManager.MinSelectableMultiplier,
                             SpeedManager.MaxSelectableMultiplier,
                             SpeedManager.SpeedSliderStep,
@@ -54,28 +56,32 @@ namespace STS2QuickAnimationMode.Settings
                             "accelerate_card_pile_sequences",
                             T("ACCELERATE_CARD_PILE_SEQUENCES", "Card pile commands"),
                             Bind("accelerate_card_pile_sequences", settings => settings.AccelerateCardPileSequences,
-                                (settings, value) => settings.AccelerateCardPileSequences = value),
+                                (settings, value) => settings.AccelerateCardPileSequences = value,
+                                () => SpeedSettings.DefaultAccelerateCardPileSequences),
                             T("ACCELERATE_CARD_PILE_SEQUENCES_DESCRIPTION",
                                 "Allows safe acceleration during draw, shuffle, discard, discard-and-draw, and exhaust command execution."))
                         .AddToggle(
                             "accelerate_card_play_resolution",
                             T("ACCELERATE_CARD_PLAY_RESOLUTION", "Committed card resolution"),
                             Bind("accelerate_card_play_resolution", settings => settings.AccelerateCardPlayResolution,
-                                (settings, value) => settings.AccelerateCardPlayResolution = value),
+                                (settings, value) => settings.AccelerateCardPlayResolution = value,
+                                () => SpeedSettings.DefaultAccelerateCardPlayResolution),
                             T("ACCELERATE_CARD_PLAY_RESOLUTION_DESCRIPTION",
                                 "Allows safe acceleration after a card has been committed and is resolving its automatic effects. Local choices still pause acceleration."))
                         .AddToggle(
                             "accelerate_turn_transitions",
                             T("ACCELERATE_TURN_TRANSITIONS", "Turn transitions"),
                             Bind("accelerate_turn_transitions", settings => settings.AccelerateTurnTransitions,
-                                (settings, value) => settings.AccelerateTurnTransitions = value),
+                                (settings, value) => settings.AccelerateTurnTransitions = value,
+                                () => SpeedSettings.DefaultAccelerateTurnTransitions),
                             T("ACCELERATE_TURN_TRANSITIONS_DESCRIPTION",
                                 "Allows safe acceleration during player turn start, player turn end, side switching, and enemy turn cleanup sequences."))
                         .AddToggle(
                             "accelerate_enemy_actions",
                             T("ACCELERATE_ENEMY_ACTIONS", "Enemy actions"),
                             Bind("accelerate_enemy_actions", settings => settings.AccelerateEnemyActions,
-                                (settings, value) => settings.AccelerateEnemyActions = value),
+                                (settings, value) => settings.AccelerateEnemyActions = value,
+                                () => SpeedSettings.DefaultAccelerateEnemyActions),
                             T("ACCELERATE_ENEMY_ACTIONS_DESCRIPTION",
                                 "Allows safe acceleration while enemies perform intents and take their automatic turns.")))
                     .AddSection("safe-ui-loading", section => section
@@ -87,14 +93,16 @@ namespace STS2QuickAnimationMode.Settings
                             "accelerate_timeline_animations",
                             T("ACCELERATE_TIMELINE_ANIMATIONS", "Timeline animations"),
                             Bind("accelerate_timeline_animations", settings => settings.AccelerateTimelineAnimations,
-                                (settings, value) => settings.AccelerateTimelineAnimations = value),
+                                (settings, value) => settings.AccelerateTimelineAnimations = value,
+                                () => SpeedSettings.DefaultAccelerateTimelineAnimations),
                             T("ACCELERATE_TIMELINE_ANIMATIONS_DESCRIPTION",
                                 "Allows safe acceleration during non-interactive timeline reveal, unlock, and slot animation sequences."))
                         .AddToggle(
                             "accelerate_loading_screens",
                             T("ACCELERATE_LOADING_SCREENS", "Run loading"),
                             Bind("accelerate_loading_screens", settings => settings.AccelerateLoadingScreens,
-                                (settings, value) => settings.AccelerateLoadingScreens = value),
+                                (settings, value) => settings.AccelerateLoadingScreens = value,
+                                () => SpeedSettings.DefaultAccelerateLoadingScreens),
                             T("ACCELERATE_LOADING_SCREENS_DESCRIPTION",
                                 "Allows safe acceleration during run loading and background asset loading screens.")))
                     .AddSection("progressive-acceleration", section => section
@@ -107,7 +115,8 @@ namespace STS2QuickAnimationMode.Settings
                             T("PROGRESSIVE_ACCELERATION_ENABLED", "Enable progressive acceleration"),
                             Bind("progressive_acceleration_enabled",
                                 settings => settings.ProgressiveAccelerationEnabled,
-                                (settings, value) => settings.ProgressiveAccelerationEnabled = value),
+                                (settings, value) => settings.ProgressiveAccelerationEnabled = value,
+                                () => SpeedSettings.DefaultProgressiveAccelerationEnabled),
                             T("PROGRESSIVE_ACCELERATION_ENABLED_DESCRIPTION",
                                 "Adds a configurable delay and ramp before safe automatic sequences reach the target speed.")))
                     .AddSection("progressive-tuning", section => section
@@ -119,9 +128,10 @@ namespace STS2QuickAnimationMode.Settings
                             "time_threshold",
                             T("TIME_THRESHOLD", "Activation Delay"),
                             BindDouble("time_threshold", settings => settings.TimeThreshold,
-                                (settings, value) => settings.TimeThreshold = (float)value),
-                            0.0d,
-                            2.0d,
+                                (settings, value) => settings.TimeThreshold = (float)value,
+                                () => SpeedSettings.DefaultTimeThreshold),
+                            SpeedManager.MinTimeThreshold,
+                            SpeedManager.MaxTimeThreshold,
                             0.05d,
                             FormatSeconds,
                             T("TIME_THRESHOLD_DESCRIPTION",
@@ -130,9 +140,10 @@ namespace STS2QuickAnimationMode.Settings
                             "transition_duration",
                             T("TRANSITION_DURATION", "Ramp Duration"),
                             BindDouble("transition_duration", settings => settings.TransitionDuration,
-                                (settings, value) => settings.TransitionDuration = (float)value),
-                            0.0d,
-                            3.0d,
+                                (settings, value) => settings.TransitionDuration = (float)value,
+                                () => SpeedSettings.DefaultTransitionDuration),
+                            SpeedManager.MinTransitionDuration,
+                            SpeedManager.MaxTransitionDuration,
                             0.05d,
                             FormatSeconds,
                             T("TRANSITION_DURATION_DESCRIPTION",
@@ -143,9 +154,10 @@ namespace STS2QuickAnimationMode.Settings
         private static IModSettingsValueBinding<TValue> Bind<TValue>(
             string dataKey,
             Func<SpeedSettings, TValue> getter,
-            Action<SpeedSettings, TValue> setter)
+            Action<SpeedSettings, TValue> setter,
+            Func<TValue> defaultValueFactory)
         {
-            return ModSettingsBindings.Callback(
+            var binding = ModSettingsBindings.Callback(
                 Const.ModId,
                 dataKey,
                 () => getter(ModDataStore.Get<SpeedSettings>(ModDataStore.SettingsKey)),
@@ -155,14 +167,16 @@ namespace STS2QuickAnimationMode.Settings
                     SpeedManager.OnSettingsChanged();
                 },
                 () => ModDataStore.Save(ModDataStore.SettingsKey));
+            return ModSettingsBindings.WithDefault(binding, defaultValueFactory);
         }
 
         private static IModSettingsValueBinding<double> BindDouble(
             string dataKey,
             Func<SpeedSettings, float> getter,
-            Action<SpeedSettings, double> setter)
+            Action<SpeedSettings, double> setter,
+            Func<float> defaultValueFactory)
         {
-            return Bind(dataKey, settings => getter(settings), setter);
+            return Bind(dataKey, settings => getter(settings), setter, () => defaultValueFactory());
         }
 
         private static ModSettingsText T(string key, string fallback)

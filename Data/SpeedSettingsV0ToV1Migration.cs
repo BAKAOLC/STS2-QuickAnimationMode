@@ -7,20 +7,27 @@ namespace STS2QuickAnimationMode.Data
     internal sealed class SpeedSettingsV0ToV1Migration : IMigration
     {
         public int FromVersion => 0;
-        public int ToVersion => SpeedSettings.CurrentSchemaVersion;
+        public int ToVersion => 1;
 
         public bool Migrate(JsonObject data)
         {
-            data["schema_version"] = SpeedSettings.CurrentSchemaVersion;
+            data["schema_version"] = ToVersion;
             EnsureSpeedMultiplier(data);
             EnsureAccelerationMode(data);
-            EnsureBool(data, "progressive_acceleration_enabled", false);
-            EnsureBool(data, "accelerate_card_pile_sequences", true);
-            EnsureBool(data, "accelerate_card_play_resolution", true);
-            EnsureBool(data, "accelerate_turn_transitions", true);
-            EnsureBool(data, "accelerate_enemy_actions", true);
-            EnsureBool(data, "accelerate_timeline_animations", true);
-            EnsureBool(data, "accelerate_loading_screens", true);
+            EnsureBool(data, "progressive_acceleration_enabled",
+                SpeedSettings.DefaultProgressiveAccelerationEnabled);
+            EnsureBool(data, "accelerate_card_pile_sequences",
+                SpeedSettings.DefaultAccelerateCardPileSequences);
+            EnsureBool(data, "accelerate_card_play_resolution",
+                SpeedSettings.DefaultAccelerateCardPlayResolution);
+            EnsureBool(data, "accelerate_turn_transitions",
+                SpeedSettings.DefaultAccelerateTurnTransitions);
+            EnsureBool(data, "accelerate_enemy_actions",
+                SpeedSettings.DefaultAccelerateEnemyActions);
+            EnsureBool(data, "accelerate_timeline_animations",
+                SpeedSettings.DefaultAccelerateTimelineAnimations);
+            EnsureBool(data, "accelerate_loading_screens",
+                SpeedSettings.DefaultAccelerateLoadingScreens);
             return true;
         }
 
@@ -28,7 +35,7 @@ namespace STS2QuickAnimationMode.Data
         {
             if (!TryGetDouble(data, "speed_multiplier", out var value))
             {
-                data["speed_multiplier"] = 1.0d;
+                data["speed_multiplier"] = SpeedSettings.DefaultSpeedMultiplier;
                 return;
             }
 
