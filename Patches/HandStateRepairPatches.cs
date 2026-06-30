@@ -56,8 +56,11 @@ namespace STS2QuickAnimationMode.Patches
             return [new(typeof(NCardPlay), "Cleanup", [typeof(bool)], true)];
         }
 
-        public static void Postfix()
+        public static void Postfix(bool isFinished)
         {
+            if (isFinished)
+                return;
+
             HandStateRepair.RequestFullRepair();
         }
     }

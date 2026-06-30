@@ -159,7 +159,7 @@ namespace STS2QuickAnimationMode.Utils
         private static NHandCardHolder? EnsureHandHolder(NPlayerHand hand, CardModel card, int desiredIndex)
         {
             if (hand.GetCardHolder(card) is NHandCardHolder awaitingHolder && hand.IsAwaitingPlay(awaitingHolder))
-                hand.TryCancelCardPlay(card);
+                return null;
 
             if (hand.GetCardHolder(card) is NHandCardHolder holder)
             {
@@ -175,10 +175,7 @@ namespace STS2QuickAnimationMode.Utils
             var cardNode = NCard.FindOnTable(card);
             var playQueue = NCombatRoom.Instance?.Ui.PlayQueue;
             if (cardNode != null && playQueue?.GetCardNode(card) == cardNode)
-            {
-                playQueue.RemoveCardFromQueueForCancellation(cardNode, true);
-                return hand.GetCardHolder(card) as NHandCardHolder;
-            }
+                return null;
 
             cardNode ??= NCard.Create(card);
             return cardNode == null ? null : hand.Add(cardNode, desiredIndex);
