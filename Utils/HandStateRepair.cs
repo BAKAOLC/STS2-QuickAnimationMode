@@ -134,18 +134,13 @@ namespace STS2QuickAnimationMode.Utils
                 var handCards = handPile.Cards.ToList();
                 RemoveStaleVisibleHolders(hand, handCards);
 
-                var desiredIndex = 0;
                 foreach (var card in handCards)
                 {
-                    var holder = EnsureHandHolder(hand, card, desiredIndex);
+                    var holder = EnsureHandHolder(hand, handCards, card);
                     if (holder == null)
                         continue;
 
-                    if (holder.GetParent() == hand.CardHolderContainer)
-                        hand.CardHolderContainer.MoveChildSafely(holder, desiredIndex);
-
                     NormalizeHandCard(holder.CardNode, holder, true);
-                    desiredIndex++;
                 }
 
                 hand.ForceRefreshCardIndices();
@@ -156,7 +151,11 @@ namespace STS2QuickAnimationMode.Utils
             }
         }
 
-        private static NHandCardHolder? EnsureHandHolder(NPlayerHand hand, CardModel card, int desiredIndex)
+        private static NHandCardHolder? EnsureHandHolder(
+            NPlayerHand hand,
+            IReadOnlyList<CardModel> handCards,
+            CardModel card
+        )
         {
             if (hand.GetCardHolder(card) is NHandCardHolder awaitingHolder && hand.IsAwaitingPlay(awaitingHolder))
                 return null;
@@ -166,6 +165,7 @@ namespace STS2QuickAnimationMode.Utils
                 if (holder.GetParent() != hand.CardHolderContainer)
                 {
                     holder.Reparent(hand.CardHolderContainer);
+                    MoveHolderToBackendOrder(hand, handCards, holder);
                     holder.SetDefaultTargets();
                 }
 
@@ -178,7 +178,37 @@ namespace STS2QuickAnimationMode.Utils
                 return null;
 
             cardNode ??= NCard.Create(card);
-            return cardNode == null ? null : hand.Add(cardNode, desiredIndex);
+            return cardNode == null ? null : hand.Add(cardNode, GetHandInsertIndex(hand, handCards, card));
+        }
+
+        private static void MoveHolderToBackendOrder(
+            NPlayerHand hand,
+            IReadOnlyList<CardModel> handCards,
+            NHandCardHolder holder
+        )
+        {
+            if (holder.CardNode?.Model == null)
+                return;
+
+            var insertIndex = GetHandInsertIndex(hand, handCards, holder.CardNode.Model);
+            if (insertIndex >= 0)
+                hand.CardHolderContainer.MoveChildSafely(holder, insertIndex);
+        }
+
+        private static int GetHandInsertIndex(
+            NPlayerHand hand,
+            IReadOnlyList<CardModel> handCards,
+            CardModel card
+        )
+        {
+            var presentCards = hand.CardHolderContainer
+                .GetChildren()
+                .OfType<NHandCardHolder>()
+                .Select(holder => holder.CardNode?.Model)
+                .Where(model => model != null)
+                .Cast<CardModel>();
+
+            return HandLayoutHelper.GetInsertIndex(handCards, presentCards, card);
         }
 
         private static void RemoveStaleVisibleHolders(NPlayerHand hand, IReadOnlyCollection<CardModel> handCards)
