@@ -1,7 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
-using STS2QuickAnimationMode.Controls;
 using STS2RitsuLib.Patching.Models;
 using STS2RitsuLib.Settings;
 
@@ -54,62 +53,14 @@ namespace STS2QuickAnimationMode.Patches
 
         private static MarginContainer CreateEntryLine()
         {
-            var line = new MarginContainer
-            {
-                Name = "SpeedControlSettingsEntry",
-                CustomMinimumSize = new(0, 64),
-                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
-            };
-            line.AddThemeConstantOverride("margin_left", 12);
-            line.AddThemeConstantOverride("margin_top", 0);
-            line.AddThemeConstantOverride("margin_right", 12);
-            line.AddThemeConstantOverride("margin_bottom", 0);
+            var title = Main.I18N.Get("SETTINGS_PAGE_TITLE", "Speed Control");
+            var line = ModSettingsGameSettingsEntryLine.Create(OpenSpeedControlSettings);
+            line.Name = "SpeedControlSettingsEntry";
 
-            var row = new HBoxContainer
-            {
-                Name = "ContentRow",
-                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-                Alignment = BoxContainer.AlignmentMode.Center,
-            };
-            row.AddThemeConstantOverride("separation", 16);
-            line.AddChild(row);
-
-            var label = new MegaRichTextLabel
-            {
-                Name = "Label",
-                BbcodeEnabled = true,
-                AutoSizeEnabled = false,
-                FitContent = true,
-                ScrollActive = false,
-                ClipContents = false,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Theme = ModSettingsUiResources.SettingsLineTheme,
-                IsHorizontallyBound = true,
-                Modulate = Colors.White,
-                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            label.AddThemeFontOverride("normal_font", ModSettingsUiResources.KreonRegular);
-            label.AddThemeFontOverride("bold_font", ModSettingsUiResources.KreonBold);
-            label.AddThemeFontSizeOverride("normal_font_size", 28);
-            label.AddThemeFontSizeOverride("bold_font_size", 28);
-            label.AddThemeFontSizeOverride("italics_font_size", 28);
-            label.AddThemeFontSizeOverride("bold_italics_font_size", 28);
-            label.AddThemeFontSizeOverride("mono_font_size", 28);
-            label.MinFontSize = 18;
-            label.MaxFontSize = 28;
-            label.SetTextAutoSize(Main.I18N.Get("SETTINGS_PAGE_TITLE", "Speed Control"));
-            row.AddChild(label);
-
-            var button = new VanillaSettingsLinkButton(
-                Main.I18N.Get("OPEN_RITSULIB_SETTINGS_BUTTON", "Open Settings"),
-                OpenSpeedControlSettings)
-            {
-                Name = "OpenButton",
-            };
-            row.AddChild(button);
+            if (line.GetNodeOrNull<MegaRichTextLabel>("ContentRow/Label") is { } label)
+                label.SetTextAutoSize(title);
+            if (line.GetNodeOrNull<MegaLabel>("ContentRow/RitsuLibModSettingsButton/Label") is { } buttonLabel)
+                buttonLabel.SetTextAutoSize(Main.I18N.Get("OPEN_RITSULIB_SETTINGS_BUTTON", "Open Settings"));
 
             return line;
         }
