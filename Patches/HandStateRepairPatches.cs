@@ -100,6 +100,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
+            var cardPileAddParameters = ResolveCardPileAddManyParameters();
             return
             [
                 new(typeof(CardPileCmd), nameof(CardPileCmd.Add),
@@ -107,17 +108,30 @@ namespace STS2QuickAnimationMode.Patches
                     typeof(IEnumerable<CardModel>), typeof(PileType), typeof(CardPilePosition), typeof(AbstractModel),
                     typeof(bool),
                 ]),
-                new(typeof(CardPileCmd), nameof(CardPileCmd.Add),
-                [
-                    typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel),
-                    typeof(bool),
-                ]),
+                new(typeof(CardPileCmd), nameof(CardPileCmd.Add), cardPileAddParameters),
             ];
         }
 
         public static void Postfix(ref Task<IReadOnlyList<CardPileAddResult>> __result)
         {
             __result = HandStateRepair.RepairAfterAsync(__result);
+        }
+
+        private static Type[] ResolveCardPileAddManyParameters()
+        {
+            Type[] currentParameters =
+            [
+                typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel),
+                typeof(bool), typeof(bool),
+            ];
+
+            return typeof(CardPileCmd).GetMethod(nameof(CardPileCmd.Add), currentParameters) != null
+                ? currentParameters
+                :
+                [
+                    typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel),
+                    typeof(bool),
+                ];
         }
     }
 }
