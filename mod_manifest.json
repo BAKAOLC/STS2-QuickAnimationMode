@@ -4,7 +4,7 @@
   "name": "Speed Control",
   "author": "OLC",
   "description": "Add customizable game speed multiplier (0.1x-10x) to the settings screen, beyond the built-in Fast Mode",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "has_pck": false,
   "has_dll": true,
   "affects_gameplay": false,

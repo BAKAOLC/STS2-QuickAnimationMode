@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -260,18 +261,42 @@ namespace STS2QuickAnimationMode.Utils
             if (CombatManager.Instance?.IsInProgress != true)
                 return false;
 
-            var hand = NPlayerHand.Instance;
-            if (hand is { InCardPlay: true } || hand?.IsInCardSelection == true)
-                return true;
+        var hand = NPlayerHand.Instance;
+        if (hand is { InCardPlay: true } || hand?.IsInCardSelection == true)
+            return true;
 
-            var run = RunManager.Instance;
-            if (!run.IsInProgress || run.IsSingleplayerOrFakeMultiplayer)
-                return false;
+        if (IsLocalCardOrPotionEffectExecuting() || IsCardPreviewActive())
+            return true;
 
-            return run.ActionExecutor.CurrentlyRunningAction?.State is
+        var run = RunManager.Instance;
+        if (!run.IsInProgress || run.IsSingleplayerOrFakeMultiplayer)
+            return false;
+
+        return run.ActionExecutor.CurrentlyRunningAction?.State is
                 GameActionState.Executing
-                or GameActionState.GatheringPlayerChoice
-                or GameActionState.ReadyToResumeExecuting;
-        }
+            or GameActionState.GatheringPlayerChoice
+            or GameActionState.ReadyToResumeExecuting;
     }
+
+    private static bool IsLocalCardOrPotionEffectExecuting()
+    {
+        var state = CombatManager.Instance.DebugOnlyGetState();
+        var player = LocalContext.GetMe(state);
+        return player != null && CombatManager.Instance.IsExecutingCardOrPotionEffect(player);
+    }
+
+    private static bool IsCardPreviewActive()
+    {
+        var combatUi = NCombatRoom.Instance?.Ui;
+        if ((combatUi?.CardPreviewContainer.GetChildCount() ?? 0) > 0
+            || (combatUi?.MessyCardPreviewContainer.GetChildCount() ?? 0) > 0)
+            return true;
+
+        var globalUi = NRun.Instance?.GlobalUi;
+        return (globalUi?.CardPreviewContainer.GetChildCount() ?? 0) > 0
+               || (globalUi?.MessyCardPreviewContainer.GetChildCount() ?? 0) > 0
+               || (globalUi?.EventCardPreviewContainer.GetChildCount() ?? 0) > 0
+               || (globalUi?.GridCardPreviewContainer.GetChildCount() ?? 0) > 0;
+    }
+}
 }
