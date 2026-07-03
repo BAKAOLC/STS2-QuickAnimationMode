@@ -22,6 +22,7 @@ namespace STS2QuickAnimationMode.Utils
         public const bool DefaultAccelerateTurnTransitions = true;
         public const bool DefaultAccelerateEnemyActions = true;
         public const bool DefaultAccelerateTimelineAnimations = true;
+        public const bool DefaultAccelerateGameOverSummary = true;
         public const bool DefaultAccelerateLoadingScreens = true;
 
         [JsonPropertyName("schema_version")] public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -73,6 +74,9 @@ namespace STS2QuickAnimationMode.Utils
 
         [JsonPropertyName("accelerate_timeline_animations")]
         public bool AccelerateTimelineAnimations { get; set; } = DefaultAccelerateTimelineAnimations;
+
+        [JsonPropertyName("accelerate_game_over_summary")]
+        public bool AccelerateGameOverSummary { get; set; } = DefaultAccelerateGameOverSummary;
 
         [JsonPropertyName("accelerate_loading_screens")]
         public bool AccelerateLoadingScreens { get; set; } = DefaultAccelerateLoadingScreens;

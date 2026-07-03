@@ -98,6 +98,14 @@ namespace STS2QuickAnimationMode.Settings
                             T("ACCELERATE_TIMELINE_ANIMATIONS_DESCRIPTION",
                                 "Allows safe acceleration during non-interactive timeline reveal, unlock, and slot animation sequences."))
                         .AddToggle(
+                            "accelerate_game_over_summary",
+                            T("ACCELERATE_GAME_OVER_SUMMARY", "Game over summary"),
+                            Bind("accelerate_game_over_summary", settings => settings.AccelerateGameOverSummary,
+                                (settings, value) => settings.AccelerateGameOverSummary = value,
+                                () => SpeedSettings.DefaultAccelerateGameOverSummary),
+                            T("ACCELERATE_GAME_OVER_SUMMARY_DESCRIPTION",
+                                "Allows safe acceleration while the run summary, score lines, badges, score bar, and discovery counts animate in."))
+                        .AddToggle(
                             "accelerate_loading_screens",
                             T("ACCELERATE_LOADING_SCREENS", "Run loading"),
                             Bind("accelerate_loading_screens", settings => settings.AccelerateLoadingScreens,
