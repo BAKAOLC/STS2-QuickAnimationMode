@@ -1,6 +1,8 @@
 using System.Reflection;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using STS2QuickAnimationMode.Utils;
 using STS2RitsuLib.Patching.Models;
@@ -18,11 +20,22 @@ namespace STS2QuickAnimationMode.Patches
             [
                 new(typeof(GameActionPlayerChoiceContext),
                     nameof(GameActionPlayerChoiceContext.SignalPlayerChoiceBegun),
-                    [typeof(PlayerChoiceOptions)]),
+                    ResolveSignalPlayerChoiceBegunParameters(typeof(GameActionPlayerChoiceContext))),
                 new(typeof(GameActionPlayerChoiceContext),
                     nameof(GameActionPlayerChoiceContext.SignalPlayerChoiceEnded),
                     Type.EmptyTypes),
             ];
+        }
+
+        private static Type[] ResolveSignalPlayerChoiceBegunParameters(Type contextType)
+        {
+            Type[] currentParameters = [typeof(Player), typeof(PlayerChoiceOptions)];
+            return AccessTools.DeclaredMethod(
+                contextType,
+                nameof(GameActionPlayerChoiceContext.SignalPlayerChoiceBegun),
+                currentParameters) != null
+                ? currentParameters
+                : [typeof(PlayerChoiceOptions)];
         }
 
         public static void Prefix(GameActionPlayerChoiceContext __instance, MethodBase __originalMethod)
@@ -47,10 +60,21 @@ namespace STS2QuickAnimationMode.Patches
             return
             [
                 new(typeof(HookPlayerChoiceContext), nameof(HookPlayerChoiceContext.SignalPlayerChoiceBegun),
-                    [typeof(PlayerChoiceOptions)]),
+                    ResolveSignalPlayerChoiceBegunParameters()),
                 new(typeof(HookPlayerChoiceContext), nameof(HookPlayerChoiceContext.SignalPlayerChoiceEnded),
                     Type.EmptyTypes),
             ];
+        }
+
+        private static Type[] ResolveSignalPlayerChoiceBegunParameters()
+        {
+            Type[] currentParameters = [typeof(Player), typeof(PlayerChoiceOptions)];
+            return AccessTools.DeclaredMethod(
+                typeof(HookPlayerChoiceContext),
+                nameof(HookPlayerChoiceContext.SignalPlayerChoiceBegun),
+                currentParameters) != null
+                ? currentParameters
+                : [typeof(PlayerChoiceOptions)];
         }
 
         public static void Prefix(HookPlayerChoiceContext __instance, MethodBase __originalMethod)
