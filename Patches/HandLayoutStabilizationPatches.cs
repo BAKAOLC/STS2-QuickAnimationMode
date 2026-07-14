@@ -90,7 +90,7 @@ internal static class HandLayoutStabilizer
                 break;
             }
 
-            await holder.AwaitProcessFrameNonThrowing(token);
+            await AwaitProcessFrameNonThrowing(holder, token);
         }
     }
 
@@ -105,7 +105,7 @@ internal static class HandLayoutStabilizer
                 break;
             }
 
-            await holder.AwaitProcessFrameNonThrowing(token);
+            await AwaitProcessFrameNonThrowing(holder, token);
         }
     }
 
@@ -125,7 +125,7 @@ internal static class HandLayoutStabilizer
                 return;
             }
 
-            await holder.AwaitProcessFrameNonThrowing(token);
+            await AwaitProcessFrameNonThrowing(holder, token);
         }
 
         if (holder.IsValid()
@@ -137,6 +137,23 @@ internal static class HandLayoutStabilizer
     private static float Step(Node holder, float speed)
     {
         return Mathf.Clamp((float)holder.GetProcessDeltaTime() * speed, 0f, 1f);
+    }
+
+    private static async Task AwaitProcessFrameNonThrowing(Node node, CancellationTokenSource token)
+    {
+        if (token.IsCancellationRequested)
+            return;
+
+        var tree = node.IsInsideTree() ? node.GetTree() : null;
+        if (tree == null)
+        {
+            token.Cancel();
+            return;
+        }
+
+        await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+        if (!token.IsCancellationRequested && (!node.IsValid() || !node.IsInsideTree()))
+            token.Cancel();
     }
 }
 
