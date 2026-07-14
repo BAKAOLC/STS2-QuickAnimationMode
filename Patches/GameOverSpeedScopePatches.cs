@@ -136,7 +136,7 @@ namespace STS2QuickAnimationMode.Patches
             return
             [
                 new(typeof(NRunSummary), nameof(NRunSummary.AnimateInDiscoveries),
-                    [typeof(RunState), typeof(CancellationToken)])
+                    [typeof(RunState), typeof(CancellationToken)]),
             ];
         }
 
