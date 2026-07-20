@@ -129,8 +129,13 @@ namespace STS2QuickAnimationMode.Patches
 
     public class CardExhaustQuickVfxSpeedPatch : IPatchMethod
     {
+        private const string TargetTypeName =
+            "MegaCrit.Sts2.Core.Nodes.Vfx.Cards.NCardExhaustQuickVfx";
+
+        private static readonly Type? TargetType = AccessTools.TypeByName(TargetTypeName);
+
         private static readonly FieldInfo? DurationField =
-            AccessTools.Field(typeof(NCardExhaustQuickVfx), "_anticipationDuration");
+            TargetType == null ? null : AccessTools.Field(TargetType, "_anticipationDuration");
 
         public static string PatchId => "card_animation_exhaust_quick";
         public static string Description => "Scale quick card exhaust animation duration";
@@ -138,10 +143,10 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(NCardExhaustQuickVfx), nameof(NCardExhaustQuickVfx.Create), [typeof(NCard)])];
+            return TargetType == null ? [] : [new(TargetType, "Create", [typeof(NCard)])];
         }
 
-        public static void Postfix(NCardExhaustQuickVfx? __result)
+        public static void Postfix(object? __result)
         {
             ScaleDuration(__result, DurationField);
         }
@@ -159,8 +164,13 @@ namespace STS2QuickAnimationMode.Patches
 
     public class CardExhaustVfxSpeedPatch : IPatchMethod
     {
+        private const string TargetTypeName =
+            "MegaCrit.Sts2.Core.Nodes.Vfx.Cards.NCardExhaustVfx";
+
+        private static readonly Type? TargetType = AccessTools.TypeByName(TargetTypeName);
+
         private static readonly FieldInfo? DurationField =
-            AccessTools.Field(typeof(NCardExhaustVfx), "_exhaustDuration");
+            TargetType == null ? null : AccessTools.Field(TargetType, "_exhaustDuration");
 
         public static string PatchId => "card_animation_exhaust";
         public static string Description => "Scale card exhaust animation duration";
@@ -168,10 +178,10 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(NCardExhaustVfx), nameof(NCardExhaustVfx.Create), [typeof(NCard)])];
+            return TargetType == null ? [] : [new(TargetType, "Create", [typeof(NCard)])];
         }
 
-        public static void Postfix(NCardExhaustVfx? __result)
+        public static void Postfix(object? __result)
         {
             CardExhaustQuickVfxSpeedPatch.ScaleDuration(__result, DurationField);
         }
