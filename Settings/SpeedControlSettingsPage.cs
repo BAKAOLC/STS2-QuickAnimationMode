@@ -15,7 +15,7 @@ namespace STS2QuickAnimationMode.Settings
                     .WithTitle(T("SETTINGS_PAGE_TITLE", "Speed Control"))
                     .WithModDisplayName(T("SETTINGS_PAGE_MOD_NAME", "Speed Control"))
                     .WithDescription(T("SETTINGS_PAGE_DESCRIPTION",
-                        "Configure global speed or conservative acceleration for safe automatic sequences."))
+                        "Configure game speed, card animations, committed card resolution, and combat presentation independently."))
                     .AddSection(Const.SettingsSectionId, section => section
                         .WithTitle(T("SETTINGS_SECTION_SPEED", "Basic speed"))
                         .AddChoice(
@@ -33,11 +33,11 @@ namespace STS2QuickAnimationMode.Settings
                                     T("MODE_OFF", "Off")),
                             ],
                             T("MODE_DESCRIPTION",
-                                "Safe state acceleration only applies during whitelisted automatic sequences. Global continuous acceleration keeps the selected multiplier active."),
+                                "Controls overall game acceleration. Card animation, resolution, and combat presentation settings below are independent."),
                             ModSettingsChoicePresentation.Dropdown)
                         .AddSlider(
                             "speed_multiplier",
-                            T("SPEED_MULTIPLIER", "Speed Multiplier"),
+                            T("SPEED_MULTIPLIER", "Game Speed Multiplier"),
                             BindDouble("speed_multiplier", settings => settings.SpeedMultiplier,
                                 (settings, value) => settings.SpeedMultiplier = (float)value,
                                 () => SpeedSettings.DefaultSpeedMultiplier),
@@ -46,11 +46,87 @@ namespace STS2QuickAnimationMode.Settings
                             SpeedManager.SpeedSliderStep,
                             value => $"{value:0.#}x",
                             T("SPEED_MULTIPLIER_DESCRIPTION",
-                                "Target speed used immediately in global mode or when a safe automatic sequence is active.")))
+                                "Target multiplier for global mode or the automatic sequences enabled in Safe State mode.")))
+                    .AddSection("card-animations", section => section
+                        .WithTitle(T("SETTINGS_SECTION_CARD_ANIMATIONS", "Card animations"))
+                        .WithDescription(T("SETTINGS_SECTION_CARD_ANIMATIONS_DESCRIPTION",
+                            "Speeds supported card visuals without changing overall game speed."))
+                        .AddToggle(
+                            "card_animation_acceleration_enabled",
+                            T("CARD_ANIMATION_ACCELERATION_ENABLED", "Accelerate card animations"),
+                            Bind("card_animation_acceleration_enabled",
+                                settings => settings.CardAnimationAccelerationEnabled,
+                                (settings, value) => settings.CardAnimationAccelerationEnabled = value,
+                                () => SpeedSettings.DefaultCardAnimationAccelerationEnabled),
+                            T("CARD_ANIMATION_ACCELERATION_ENABLED_DESCRIPTION",
+                                "Speeds card movement, flying and shuffling, power-card travel, exhaust effects, and hand arrangement while preserving their normal completion flow."))
+                        .AddSlider(
+                            "card_animation_multiplier",
+                            T("CARD_ANIMATION_MULTIPLIER", "Card Animation Multiplier"),
+                            BindDouble("card_animation_multiplier", settings => settings.CardAnimationMultiplier,
+                                (settings, value) => settings.CardAnimationMultiplier = (float)value,
+                                () => SpeedSettings.DefaultCardAnimationMultiplier),
+                            SpeedManager.MinSelectableMultiplier,
+                            SpeedManager.MaxSelectableMultiplier,
+                            SpeedManager.SpeedSliderStep,
+                            value => $"{value:0.#}x",
+                            T("CARD_ANIMATION_MULTIPLIER_DESCRIPTION",
+                                "Multiplier applied only to supported card animations.")))
+                    .AddSection("card-resolution", section => section
+                        .WithTitle(T("SETTINGS_SECTION_CARD_RESOLUTION", "Card resolution"))
+                        .WithDescription(T("SETTINGS_SECTION_CARD_RESOLUTION_DESCRIPTION",
+                            "Shortens built-in pauses after a card has been played without changing overall game speed."))
+                        .AddToggle(
+                            "card_resolution_acceleration_enabled",
+                            T("CARD_RESOLUTION_ACCELERATION_ENABLED", "Accelerate card resolution"),
+                            Bind("card_resolution_acceleration_enabled",
+                                settings => settings.CardResolutionAccelerationEnabled,
+                                (settings, value) => settings.CardResolutionAccelerationEnabled = value,
+                                () => SpeedSettings.DefaultCardResolutionAccelerationEnabled),
+                            T("CARD_RESOLUTION_ACCELERATION_ENABLED_DESCRIPTION",
+                                "Speeds the pauses between a played card's automatic effects. Effects, choices, interruptions, and completion order remain unchanged."))
+                        .AddSlider(
+                            "card_resolution_multiplier",
+                            T("CARD_RESOLUTION_MULTIPLIER", "Card Resolution Multiplier"),
+                            BindDouble("card_resolution_multiplier", settings => settings.CardResolutionMultiplier,
+                                (settings, value) => settings.CardResolutionMultiplier = (float)value,
+                                () => SpeedSettings.DefaultCardResolutionMultiplier),
+                            SpeedManager.MinSelectableMultiplier,
+                            SpeedManager.MaxSelectableMultiplier,
+                            SpeedManager.SpeedSliderStep,
+                            value => $"{value:0.#}x",
+                            T("CARD_RESOLUTION_MULTIPLIER_DESCRIPTION",
+                                "Multiplier for pauses between the automatic effects of a played card.")))
+                    .AddSection("combat-presentation", section => section
+                        .WithTitle(T("SETTINGS_SECTION_COMBAT_PRESENTATION", "Combat presentation"))
+                        .WithDescription(T("SETTINGS_SECTION_COMBAT_PRESENTATION_DESCRIPTION",
+                            "Speeds supported combat messages and visual pacing without changing overall game speed."))
+                        .AddToggle(
+                            "combat_presentation_acceleration_enabled",
+                            T("COMBAT_PRESENTATION_ACCELERATION_ENABLED", "Accelerate combat presentation"),
+                            Bind("combat_presentation_acceleration_enabled",
+                                settings => settings.CombatPresentationAccelerationEnabled,
+                                (settings, value) => settings.CombatPresentationAccelerationEnabled = value,
+                                () => SpeedSettings.DefaultCombatPresentationAccelerationEnabled),
+                            T("COMBAT_PRESENTATION_ACCELERATION_ENABLED_DESCRIPTION",
+                                "Speeds battle-start and turn banners, the brief pause at turn start, enemy intent presentation, damage and healing numbers, and blocked text. Every action still runs in its normal order."))
+                        .AddSlider(
+                            "combat_presentation_multiplier",
+                            T("COMBAT_PRESENTATION_MULTIPLIER", "Combat Presentation Multiplier"),
+                            BindDouble("combat_presentation_multiplier",
+                                settings => settings.CombatPresentationMultiplier,
+                                (settings, value) => settings.CombatPresentationMultiplier = (float)value,
+                                () => SpeedSettings.DefaultCombatPresentationMultiplier),
+                            SpeedManager.MinSelectableMultiplier,
+                            SpeedManager.MaxSelectableMultiplier,
+                            SpeedManager.SpeedSliderStep,
+                            value => $"{value:0.#}x",
+                            T("COMBAT_PRESENTATION_MULTIPLIER_DESCRIPTION",
+                                "Multiplier for supported combat messages, number popups, and their related presentation pauses.")))
                     .AddSection("safe-sequences", section => section
                         .WithTitle(T("SETTINGS_SECTION_SAFE_SEQUENCES", "Combat automation"))
                         .WithDescription(T("SETTINGS_SECTION_SAFE_SEQUENCES_DESCRIPTION",
-                            "Choose which explicitly whitelisted combat flows may raise the game speed in safe state mode."))
+                            "Choose which supported automatic combat flows may use the game speed multiplier in Safe State mode."))
                         .WithVisibleWhen(IsSafeStateMode)
                         .AddToggle(
                             "accelerate_card_pile_sequences",
@@ -67,7 +143,7 @@ namespace STS2QuickAnimationMode.Settings
                                 (settings, value) => settings.AccelerateCardPlayResolution = value,
                                 () => SpeedSettings.DefaultAccelerateCardPlayResolution),
                             T("ACCELERATE_CARD_PLAY_RESOLUTION_DESCRIPTION",
-                                "Allows safe acceleration after a card has been committed and is resolving its automatic effects. Local choices still pause acceleration."))
+                                "Allows safe acceleration after a card has been played and is resolving its automatic effects. Acceleration pauses whenever the player must make a choice."))
                         .AddToggle(
                             "accelerate_turn_transitions",
                             T("ACCELERATE_TURN_TRANSITIONS", "Turn transitions"),
@@ -155,7 +231,41 @@ namespace STS2QuickAnimationMode.Settings
                             0.05d,
                             FormatSeconds,
                             T("TRANSITION_DURATION_DESCRIPTION",
-                                "How long it takes to interpolate from 1x to the selected target speed after the activation delay."))),
+                                "How long it takes to interpolate from 1x to the selected target speed after the activation delay.")))
+                    .AddSection("multiplier-guide", section => section
+                        .WithTitle(T("SETTINGS_SECTION_MULTIPLIER_GUIDE", "Multiplier guide"))
+                        .WithDescription(T("SETTINGS_SECTION_MULTIPLIER_GUIDE_DESCRIPTION",
+                            "Around 3x is recommended when using one speed control by itself: it removes much of the waiting while remaining visually comfortable and avoiding many very-high-speed issues."))
+                        .AddInfoCard(
+                            "game_speed_guide",
+                            T("GAME_SPEED_GUIDE", "Game speed"),
+                            T("GAME_SPEED_GUIDE_DESCRIPTION",
+                                "Changes the pace of the whole game. Global Continuous applies broadly; Safe State applies only during enabled automatic flows such as pile commands, played-card effects, turn transitions, enemy actions, timelines, and loading."))
+                        .AddInfoCard(
+                            "card_animation_guide",
+                            T("CARD_ANIMATION_GUIDE", "Card animation speed"),
+                            T("CARD_ANIMATION_GUIDE_DESCRIPTION",
+                                "Speeds supported card movement, flying and shuffling, power-card travel, exhaust effects, and hand arrangement. By itself it does not speed up the rest of the game."))
+                        .AddInfoCard(
+                            "card_resolution_guide",
+                            T("CARD_RESOLUTION_GUIDE", "Card resolution speed"),
+                            T("CARD_RESOLUTION_GUIDE_DESCRIPTION",
+                                "Shortens pauses between the automatic effects of a card that has already been played. It does not skip effects or choices, change their order, or affect unrelated pauses."))
+                        .AddInfoCard(
+                            "combat_presentation_guide",
+                            T("COMBAT_PRESENTATION_GUIDE", "Combat presentation speed"),
+                            T("COMBAT_PRESENTATION_GUIDE_DESCRIPTION",
+                                "Speeds battle-start and turn banners, the brief turn-start pause, enemy intent presentation, damage and healing numbers, and blocked text. Enemy attacks may begin sooner because the presentation is shorter, but no action or effect is skipped or reordered."))
+                        .AddInfoCard(
+                            "progressive_acceleration_guide",
+                            T("PROGRESSIVE_ACCELERATION_GUIDE", "Progressive acceleration"),
+                            T("PROGRESSIVE_ACCELERATION_GUIDE_DESCRIPTION",
+                                "Only affects Safe State game speed. It stays at normal speed for the Activation Delay, then gradually reaches the target over the Ramp Duration. This keeps short flows from suddenly surging and makes speed changes smoother, but reaches full speed later. It does not affect the other three multipliers."))
+                        .AddInfoCard(
+                            "stacking_guide",
+                            T("STACKING_GUIDE", "Using multiple speed controls"),
+                            T("STACKING_GUIDE_DESCRIPTION",
+                                "Game speed, card animation speed, card resolution speed, and combat presentation speed are independent. Their effects can compound where their coverage overlaps. The around-3x recommendation assumes one control is used by itself; when stacking them, start lower and adjust one multiplier at a time."))),
                 Const.SettingsPageId);
         }
 

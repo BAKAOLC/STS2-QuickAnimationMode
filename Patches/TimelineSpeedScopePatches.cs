@@ -31,7 +31,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TryProcess(NSlotsContainer slotsContainer, double delta)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || WhatsMovedField?.GetValue(slotsContainer) is not Control whatsMoved
                 || TargetPositionField?.GetValue(slotsContainer) is not Vector2 targetPosition
                 || IsDraggingField?.GetValue(slotsContainer) is not bool isDragging
@@ -101,7 +101,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TrySpawnIcon(NEraColumn column)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || IconField?.GetValue(column) is not TextureRect icon
                 || IconTweenField == null)
                 return false;
@@ -112,7 +112,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TrySpawnNameAndYear(NEraColumn column, ref Task result)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || NameField?.GetValue(column) is not MegaLabel name
                 || YearField?.GetValue(column) is not MegaLabel year
                 || LabelTweenField == null
@@ -125,7 +125,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TrySaveBeforeAnimationPosition(NEraColumn column, ref Task result)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || IsAnimatedField == null
                 || PrevLocalPosField == null
                 || PrevGlobalPosField == null
@@ -205,7 +205,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static void TrackTween(NTimelineTutorial tutorial)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || TweenField?.GetValue(tutorial) is not Tween tween)
                 return;
 
@@ -226,7 +226,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static void TrackTween(NUnlockInfo unlockInfo)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled
                 || TweenField?.GetValue(unlockInfo) is not Tween tween)
                 return;
 
@@ -235,7 +235,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static Task TrackAfterAsync(Task task, NUnlockInfo unlockInfo)
         {
-            return SpeedManager.AreBehaviorPatchesEnabled
+            return SpeedManager.AreGlobalBehaviorPatchesEnabled
                 ? TrackAfterAsyncCore(task, unlockInfo)
                 : task;
         }
@@ -333,7 +333,7 @@ namespace STS2QuickAnimationMode.Patches
 
         private static void TrackTween(Node owner, object? value)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled || value is not Tween tween)
+            if (!SpeedManager.AreGlobalBehaviorPatchesEnabled || value is not Tween tween)
                 return;
 
             TaskHelper.RunSafely(TrackTweenAsync(owner, tween));

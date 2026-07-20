@@ -23,7 +23,7 @@ namespace STS2QuickAnimationMode.Utils
 
         public static void RequestFullRepair()
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled)
+            if (!SpeedManager.AreCardBehaviorPatchesEnabled)
                 return;
 
             _pendingRepairFrames = Math.Max(_pendingRepairFrames, DeferredRepairFrames);
@@ -31,22 +31,22 @@ namespace STS2QuickAnimationMode.Utils
 
         public static Task RepairAfterAsync(Task task)
         {
-            return SpeedManager.AreBehaviorPatchesEnabled ? RepairAfterAsyncCore(task) : task;
+            return SpeedManager.AreCardBehaviorPatchesEnabled ? RepairAfterAsyncCore(task) : task;
         }
 
         public static Task<T> RepairAfterAsync<T>(Task<T> task)
         {
-            return SpeedManager.AreBehaviorPatchesEnabled ? RepairAfterAsyncCore(task) : task;
+            return SpeedManager.AreCardBehaviorPatchesEnabled ? RepairAfterAsyncCore(task) : task;
         }
 
         public static Task<T> GuardDuringHandMutationAsync<T>(Task<T> task)
         {
-            return SpeedManager.AreBehaviorPatchesEnabled ? GuardDuringHandMutationAsyncCore(task) : task;
+            return SpeedManager.AreCardBehaviorPatchesEnabled ? GuardDuringHandMutationAsyncCore(task) : task;
         }
 
         public static void ProcessFrame()
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled)
+            if (!SpeedManager.AreCardBehaviorPatchesEnabled)
             {
                 _pendingRepairFrames = 0;
                 return;
@@ -70,7 +70,7 @@ namespace STS2QuickAnimationMode.Utils
         {
             try
             {
-                if (!SpeedManager.AreBehaviorPatchesEnabled)
+                if (!SpeedManager.AreCardBehaviorPatchesEnabled)
                     return;
 
                 if (IsRepairUnsafeNow())
@@ -168,7 +168,7 @@ namespace STS2QuickAnimationMode.Utils
         {
             try
             {
-                if (!SpeedManager.AreBehaviorPatchesEnabled || CombatManager.Instance?.IsInProgress != true)
+                if (!SpeedManager.AreCardBehaviorPatchesEnabled || CombatManager.Instance?.IsInProgress != true)
                     return;
 
                 if (IsRepairUnsafeNow())

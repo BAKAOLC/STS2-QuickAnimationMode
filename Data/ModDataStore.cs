@@ -29,6 +29,7 @@ namespace STS2QuickAnimationMode.Data
                     [
                         new SpeedSettingsV0ToV1Migration(),
                         new SpeedSettingsV1ToV2Migration(),
+                        new SpeedSettingsV2ToV3Migration(),
                     ]
                 );
             }

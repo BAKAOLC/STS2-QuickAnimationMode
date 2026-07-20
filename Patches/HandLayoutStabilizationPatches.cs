@@ -38,7 +38,8 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TryStartAngleAnimation(NHandCardHolder holder, float angle)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled || TargetAngleField == null || AngleCancelTokenField == null)
+            if (!SpeedManager.AreCardBehaviorPatchesEnabled || TargetAngleField == null ||
+                AngleCancelTokenField == null)
                 return false;
 
             TargetAngleField.SetValue(holder, angle);
@@ -49,7 +50,7 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TryStartPositionAnimation(NHandCardHolder holder, Vector2 position)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled || TargetPositionField == null ||
+            if (!SpeedManager.AreCardBehaviorPatchesEnabled || TargetPositionField == null ||
                 PositionCancelTokenField == null)
                 return false;
 
@@ -61,7 +62,8 @@ namespace STS2QuickAnimationMode.Patches
 
         public static bool TryStartScaleAnimation(NHandCardHolder holder, Vector2 scale)
         {
-            if (!SpeedManager.AreBehaviorPatchesEnabled || TargetScaleField == null || ScaleCancelTokenField == null)
+            if (!SpeedManager.AreCardBehaviorPatchesEnabled || TargetScaleField == null ||
+                ScaleCancelTokenField == null)
                 return false;
 
             TargetScaleField.SetValue(holder, scale);
@@ -139,7 +141,8 @@ namespace STS2QuickAnimationMode.Patches
 
         private static float Step(Node holder, float speed)
         {
-            return Mathf.Clamp((float)holder.GetProcessDeltaTime() * speed, 0f, 1f);
+            var delta = (float)holder.GetProcessDeltaTime() * SpeedManager.EffectiveCardAnimationMultiplier;
+            return Mathf.Clamp(delta * speed, 0f, 1f);
         }
 
         private static async Task AwaitProcessFrameNonThrowing(Node node, CancellationTokenSource token)

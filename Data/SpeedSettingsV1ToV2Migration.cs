@@ -10,7 +10,7 @@ namespace STS2QuickAnimationMode.Data
         private const double RegressedDefaultTimeThreshold = 0.05d;
 
         public int FromVersion => 1;
-        public int ToVersion => SpeedSettings.CurrentSchemaVersion;
+        public int ToVersion => 2;
 
         public bool Migrate(JsonObject data)
         {

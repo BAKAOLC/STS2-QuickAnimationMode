@@ -21,9 +21,21 @@ namespace STS2QuickAnimationMode.Patches
             ];
         }
 
-        public static void Postfix(ref Task __result)
+        public static void Prefix(out int __state)
         {
+            __state = CardResolutionSpeed.Enter();
+        }
+
+        public static void Postfix(ref Task __result, int __state)
+        {
+            CardResolutionSpeed.Restore(__state);
             __result = SpeedManager.TrackAsync(__result, SafeSpeedReason.CardPlayResolution);
+        }
+
+        public static Exception? Finalizer(Exception? __exception, int __state)
+        {
+            CardResolutionSpeed.Restore(__state);
+            return __exception;
         }
     }
 }

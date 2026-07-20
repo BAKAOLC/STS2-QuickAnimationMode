@@ -49,14 +49,47 @@ namespace STS2QuickAnimationMode.Utils
         private static SpeedSettings Settings => ModDataStore.Get<SpeedSettings>(ModDataStore.SettingsKey);
 
         public static float CurrentMultiplier => ClampMultiplier(Settings.SpeedMultiplier);
+        public static float CardAnimationMultiplier => ClampMultiplier(Settings.CardAnimationMultiplier);
+        public static float CardResolutionMultiplier => ClampMultiplier(Settings.CardResolutionMultiplier);
+        public static float CombatPresentationMultiplier => ClampMultiplier(Settings.CombatPresentationMultiplier);
         public static float TransitionDuration => Math.Max(0.0f, Settings.TransitionDuration);
         public static float TimeThreshold => Math.Max(0.0f, Settings.TimeThreshold);
         public static float EffectiveMultiplier { get; private set; } = NormalMultiplier;
 
         public static bool IsAccelerationEnabled =>
-            Main.IsModActive && Settings.AccelerationMode != SpeedAccelerationMode.Off;
+            IsGlobalAccelerationEnabled
+            || IsCardAnimationAccelerationEnabled
+            || IsCardResolutionAccelerationEnabled
+            || IsCombatPresentationAccelerationEnabled;
 
-        public static bool AreBehaviorPatchesEnabled => IsAccelerationEnabled;
+        public static bool IsGlobalAccelerationEnabled =>
+            Main.IsModActive
+            && Settings.AccelerationMode is SpeedAccelerationMode.SafeState or SpeedAccelerationMode.AlwaysOn;
+
+        public static bool IsCardAnimationAccelerationEnabled =>
+            Main.IsModActive && Settings.CardAnimationAccelerationEnabled;
+
+        public static bool IsCardResolutionAccelerationEnabled =>
+            Main.IsModActive && Settings.CardResolutionAccelerationEnabled;
+
+        public static bool IsCombatPresentationAccelerationEnabled =>
+            Main.IsModActive && Settings.CombatPresentationAccelerationEnabled;
+
+        public static float EffectiveCardAnimationMultiplier =>
+            IsCardAnimationAccelerationEnabled ? CardAnimationMultiplier : NormalMultiplier;
+
+        public static float EffectiveCardResolutionMultiplier =>
+            IsCardResolutionAccelerationEnabled ? CardResolutionMultiplier : NormalMultiplier;
+
+        public static float EffectiveCombatPresentationMultiplier =>
+            IsCombatPresentationAccelerationEnabled ? CombatPresentationMultiplier : NormalMultiplier;
+
+        public static bool AreCardBehaviorPatchesEnabled =>
+            IsGlobalAccelerationEnabled
+            || IsCardAnimationAccelerationEnabled
+            || IsCardResolutionAccelerationEnabled;
+
+        public static bool AreGlobalBehaviorPatchesEnabled => IsGlobalAccelerationEnabled;
 
         private static double Now => Time.GetTicksMsec() / 1000.0;
 
@@ -66,7 +99,11 @@ namespace STS2QuickAnimationMode.Utils
             ResetSpeed();
             EnsureProcessPump();
             Main.Logger.Info(
-                $"SpeedManager initialized, mode: {Settings.AccelerationMode}, multiplier: {CurrentMultiplier}x");
+                $"SpeedManager initialized, game mode: {Settings.AccelerationMode}, game: {CurrentMultiplier}x, " +
+                $"card animations: {Settings.CardAnimationAccelerationEnabled} ({CardAnimationMultiplier}x), " +
+                $"card resolution: {Settings.CardResolutionAccelerationEnabled} ({CardResolutionMultiplier}x), " +
+                $"combat presentation: {Settings.CombatPresentationAccelerationEnabled} " +
+                $"({CombatPresentationMultiplier}x)");
         }
 
         public static IDisposable BeginScope(SafeSpeedReason reason)
@@ -161,7 +198,8 @@ namespace STS2QuickAnimationMode.Utils
                     break;
                 default:
                     SetTarget(NormalMultiplier, true);
-                    break;
+                    ReleaseSpeedLayerIfNeeded();
+                    return;
             }
 
             ApplySpeedTransition();
@@ -191,7 +229,7 @@ namespace STS2QuickAnimationMode.Utils
 
         public static void ApplySpeed()
         {
-            if (!IsAccelerationEnabled)
+            if (!IsGlobalAccelerationEnabled)
             {
                 ReleaseSpeedLayerIfNeeded();
                 return;
@@ -204,7 +242,7 @@ namespace STS2QuickAnimationMode.Utils
 
         public static void ScaleExternalTimeScale(ref float timeScale)
         {
-            if (!IsAccelerationEnabled)
+            if (!IsGlobalAccelerationEnabled)
                 return;
 
             _baseTimeScale = NormalizeBaseTimeScale(timeScale);
@@ -278,7 +316,7 @@ namespace STS2QuickAnimationMode.Utils
 
         private static void RequestHandRepairForReason(SafeSpeedReason reason)
         {
-            if (AreBehaviorPatchesEnabled
+            if (AreCardBehaviorPatchesEnabled
                 && reason is SafeSpeedReason.CardPileSequence or SafeSpeedReason.CardPlayResolution)
                 HandStateRepair.RequestFullRepair();
         }
@@ -291,7 +329,7 @@ namespace STS2QuickAnimationMode.Utils
 
         private static bool ShouldTrackReason(SafeSpeedReason reason)
         {
-            if (!IsAccelerationEnabled)
+            if (!IsGlobalAccelerationEnabled)
                 return false;
 
             return Settings.AccelerationMode == SpeedAccelerationMode.AlwaysOn || IsReasonConfigured(reason);
@@ -354,7 +392,7 @@ namespace STS2QuickAnimationMode.Utils
 
         private static void ApplySpeedTransition()
         {
-            if (!IsAccelerationEnabled)
+            if (!IsGlobalAccelerationEnabled)
             {
                 ReleaseSpeedLayerIfNeeded();
                 return;
@@ -467,6 +505,9 @@ namespace STS2QuickAnimationMode.Utils
             ModDataStore.Modify<SpeedSettings>(ModDataStore.SettingsKey, settings =>
             {
                 settings.SpeedMultiplier = ClampMultiplier(settings.SpeedMultiplier);
+                settings.CardAnimationMultiplier = ClampMultiplier(settings.CardAnimationMultiplier);
+                settings.CardResolutionMultiplier = ClampMultiplier(settings.CardResolutionMultiplier);
+                settings.CombatPresentationMultiplier = ClampMultiplier(settings.CombatPresentationMultiplier);
                 settings.SchemaVersion = SpeedSettings.CurrentSchemaVersion;
                 settings.TransitionDuration = Mathf.Clamp(
                     settings.TransitionDuration,

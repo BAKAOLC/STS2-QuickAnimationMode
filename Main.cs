@@ -60,6 +60,21 @@ namespace STS2QuickAnimationMode
         {
             patcher.RegisterPatch<SettingsScreenPatch>();
             patcher.RegisterPatch<HitStopPatch>();
+            patcher.RegisterPatch<CardTweenDurationPatch>();
+            patcher.RegisterPatch<CardTweenIntervalPatch>();
+            patcher.RegisterPatch<CardFlyVfxSpeedPatch>();
+            patcher.RegisterPatch<CardFlyShuffleVfxSpeedPatch>();
+            patcher.RegisterPatch<CardFlyPowerVfxSpeedPatch>();
+            patcher.RegisterPatch<CardExhaustQuickVfxSpeedPatch>();
+            patcher.RegisterPatch<CardExhaustVfxSpeedPatch>();
+            patcher.RegisterPatch<CardResolutionWaitPatch>();
+            patcher.RegisterPatch<CombatPresentationAnimationScopePatch>();
+            patcher.RegisterPatch<CombatPresentationWaitMarkerPatch>();
+            patcher.RegisterPatch<EnemyIntentPresentationScopePatch>();
+            patcher.RegisterPatch<CombatPresentationTweenDelayPatch>();
+            patcher.RegisterPatch<CombatPresentationWaitPatch>();
+            patcher.RegisterPatch<DamageNumberPresentationProcessPatch>();
+            patcher.RegisterPatch<HealNumberPresentationProcessPatch>();
             patcher.RegisterPatch<SpeedProcessPumpInstallPatch>();
             patcher.RegisterPatch<HandAddStateRepairPatch>();
             patcher.RegisterPatch<ReturnHolderToHandStateRepairPatch>();

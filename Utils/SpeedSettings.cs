@@ -11,9 +11,15 @@ namespace STS2QuickAnimationMode.Utils
 
     public class SpeedSettings
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
         public const float DefaultSpeedMultiplier = 1.0f;
         public const SpeedAccelerationMode DefaultAccelerationMode = SpeedAccelerationMode.SafeState;
+        public const bool DefaultCardAnimationAccelerationEnabled = false;
+        public const float DefaultCardAnimationMultiplier = 3.0f;
+        public const bool DefaultCardResolutionAccelerationEnabled = false;
+        public const float DefaultCardResolutionMultiplier = 3.0f;
+        public const bool DefaultCombatPresentationAccelerationEnabled = false;
+        public const float DefaultCombatPresentationMultiplier = 3.0f;
         public const bool DefaultProgressiveAccelerationEnabled = false;
         public const float DefaultTransitionDuration = 10.0f;
         public const float DefaultTimeThreshold = 3.0f;
@@ -44,6 +50,25 @@ namespace STS2QuickAnimationMode.Utils
         /// </summary>
         [JsonPropertyName("speed_multiplier")]
         public float SpeedMultiplier { get; set; } = DefaultSpeedMultiplier;
+
+        [JsonPropertyName("card_animation_acceleration_enabled")]
+        public bool CardAnimationAccelerationEnabled { get; set; } = DefaultCardAnimationAccelerationEnabled;
+
+        [JsonPropertyName("card_animation_multiplier")]
+        public float CardAnimationMultiplier { get; set; } = DefaultCardAnimationMultiplier;
+
+        [JsonPropertyName("card_resolution_acceleration_enabled")]
+        public bool CardResolutionAccelerationEnabled { get; set; } = DefaultCardResolutionAccelerationEnabled;
+
+        [JsonPropertyName("card_resolution_multiplier")]
+        public float CardResolutionMultiplier { get; set; } = DefaultCardResolutionMultiplier;
+
+        [JsonPropertyName("combat_presentation_acceleration_enabled")]
+        public bool CombatPresentationAccelerationEnabled { get; set; } =
+            DefaultCombatPresentationAccelerationEnabled;
+
+        [JsonPropertyName("combat_presentation_multiplier")]
+        public float CombatPresentationMultiplier { get; set; } = DefaultCombatPresentationMultiplier;
 
         [JsonPropertyName("progressive_acceleration_enabled")]
         public bool ProgressiveAccelerationEnabled { get; set; } = DefaultProgressiveAccelerationEnabled;
