@@ -14,39 +14,70 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return
-            [
-                new(typeof(CombatManager), "StartTurn", [typeof(Func<Task>)], true),
-                new(typeof(CombatManager), "AfterAllPlayersReadyToEndTurn",
-                    ResolveParameterTypes(
-                        "AfterAllPlayersReadyToEndTurn",
-                        [typeof(CombatState), typeof(int), typeof(Player), typeof(Func<Task>)],
-                        [typeof(Func<Task>)]),
-                    true),
-                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseOneInternal),
-                    Type.EmptyTypes),
-                new(typeof(CombatManager), "AfterAllPlayersReadyToBeginEnemyTurn", [typeof(Func<Task>)],
-                    true),
-                new(typeof(CombatManager), nameof(CombatManager.EndPlayerTurnPhaseTwoInternal),
-                    ResolveParameterTypes(
-                        nameof(CombatManager.EndPlayerTurnPhaseTwoInternal),
-                        [typeof(CancellationToken?)],
-                        Type.EmptyTypes)),
-                new(typeof(CombatManager), nameof(CombatManager.SwitchFromPlayerToEnemySide),
-                    [typeof(Func<Task>)]),
-                new(typeof(CombatManager), "EndEnemyTurn",
-                    ResolveParameterTypes("EndEnemyTurn", [typeof(CancellationToken?)], Type.EmptyTypes), true),
-                new(typeof(CombatManager), "EndEnemyTurnInternal", Type.EmptyTypes, true),
-            ];
+            var targets = new List<ModPatchTarget>();
+            var combatTurnStateType = AccessTools.TypeByName("MegaCrit.Sts2.Core.Combat.CombatTurnState");
+            var endTurnSignalType = AccessTools.TypeByName("MegaCrit.Sts2.Core.Combat.EndTurnSignal");
+            AddExistingTarget(targets, "StartTurn",
+                WithCombatTurnState(combatTurnStateType, [typeof(Func<Task>)]),
+                [typeof(Func<Task>)]);
+            AddExistingTarget(targets, "AfterAllPlayersReadyToEndTurn",
+                WithCombatTurnStateAndTrailingType(combatTurnStateType, endTurnSignalType),
+                [typeof(CombatState), typeof(int), typeof(Player), typeof(Func<Task>)],
+                [typeof(Func<Task>)]);
+            AddExistingTarget(targets, nameof(CombatManager.EndPlayerTurnPhaseOneInternal),
+                WithCombatTurnState(combatTurnStateType),
+                Type.EmptyTypes);
+            AddExistingTarget(targets, "AfterAllPlayersReadyToBeginEnemyTurn",
+                WithCombatTurnState(combatTurnStateType),
+                [typeof(Func<Task>)]);
+            AddExistingTarget(targets, nameof(CombatManager.EndPlayerTurnPhaseTwoInternal),
+                WithCombatTurnState(combatTurnStateType),
+                [typeof(CancellationToken?)],
+                Type.EmptyTypes);
+            AddExistingTarget(targets, nameof(CombatManager.SwitchFromPlayerToEnemySide),
+                WithCombatTurnState(combatTurnStateType),
+                [typeof(Func<Task>)],
+                Type.EmptyTypes);
+            AddExistingTarget(targets, "EndEnemyTurn",
+                WithCombatTurnState(combatTurnStateType),
+                [typeof(CancellationToken?)],
+                Type.EmptyTypes);
+            AddExistingTarget(targets, "EndEnemyTurnInternal", Type.EmptyTypes);
+            return [.. targets];
         }
 
-        private static Type[] ResolveParameterTypes(string methodName, params Type[][] candidates)
+        private static Type[]? WithCombatTurnState(Type? combatTurnStateType, params Type[] trailingTypes)
         {
-            foreach (var candidate in candidates)
-                if (AccessTools.DeclaredMethod(typeof(CombatManager), methodName, candidate) != null)
-                    return candidate;
+            return combatTurnStateType == null
+                ? null
+                : [combatTurnStateType, .. trailingTypes];
+        }
 
-            return candidates[0];
+        private static Type[]? WithCombatTurnStateAndTrailingType(
+            Type? combatTurnStateType,
+            Type? trailingType)
+        {
+            return combatTurnStateType == null || trailingType == null
+                ? null
+                : [combatTurnStateType, trailingType];
+        }
+
+        internal static void AddExistingTarget(
+            ICollection<ModPatchTarget> targets,
+            string methodName,
+            params Type[]?[] signatures)
+        {
+            foreach (var signature in signatures)
+            {
+                if (signature == null)
+                    continue;
+
+                if (AccessTools.DeclaredMethod(typeof(CombatManager), methodName, signature) == null)
+                    continue;
+
+                targets.Add(new(typeof(CombatManager), methodName, signature, true));
+                return;
+            }
         }
 
         public static void Postfix(ref Task __result)
@@ -63,7 +94,12 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(CombatManager), "ExecuteEnemyTurn", [typeof(Func<Task>)], true)];
+            var targets = new List<ModPatchTarget>();
+            var combatTurnStateType = AccessTools.TypeByName("MegaCrit.Sts2.Core.Combat.CombatTurnState");
+            CombatTurnTransitionSpeedScopePatch.AddExistingTarget(targets, "ExecuteEnemyTurn",
+                combatTurnStateType == null ? null : [combatTurnStateType, typeof(Func<Task>)],
+                [typeof(Func<Task>)]);
+            return [.. targets];
         }
 
         public static void Postfix(ref Task __result)
