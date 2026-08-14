@@ -127,6 +127,12 @@ namespace STS2QuickAnimationMode.Utils
             return ShouldTrackReason(reason) ? TrackAsyncCore(task, reason) : task;
         }
 
+        public static void TrackCompletion(Task task, SafeSpeedReason reason)
+        {
+            if (ShouldTrackReason(reason))
+                _ = TrackCompletionCore(task, reason);
+        }
+
         public static void ActivateTimed(SafeSpeedReason reason, float seconds = DefaultTimelineScopeSeconds)
         {
             if (!ShouldTrackReason(reason) || seconds <= 0)
@@ -272,6 +278,23 @@ namespace STS2QuickAnimationMode.Utils
             try
             {
                 return await task;
+            }
+            finally
+            {
+                RequestHandRepairForReason(reason);
+            }
+        }
+
+        private static async Task TrackCompletionCore(Task task, SafeSpeedReason reason)
+        {
+            using var scope = BeginScope(reason);
+            try
+            {
+                await task;
+            }
+            catch
+            {
+                // The original caller remains responsible for observing the original task failure.
             }
             finally
             {

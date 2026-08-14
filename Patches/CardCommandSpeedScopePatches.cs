@@ -62,9 +62,9 @@ namespace STS2QuickAnimationMode.Patches
             ];
         }
 
-        public static void Postfix(ref Task __result)
+        public static void Postfix(Task __result)
         {
-            __result = SpeedManager.TrackAsync(__result, SafeSpeedReason.CardPileSequence);
+            SpeedManager.TrackCompletion(__result, SafeSpeedReason.CardPileSequence);
         }
     }
 }
