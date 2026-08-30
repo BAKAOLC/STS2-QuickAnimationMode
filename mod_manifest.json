@@ -4,7 +4,7 @@
   "name": "Speed Control",
   "author": "OLC",
   "description": "Independently control game speed, card animations, card resolution, and combat presentation from 0.1x to 10x",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "has_pck": false,
   "has_dll": true,
   "affects_gameplay": false,
