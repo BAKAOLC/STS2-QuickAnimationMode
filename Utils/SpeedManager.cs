@@ -1,8 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
-using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using STS2QuickAnimationMode.Data;
 
 namespace STS2QuickAnimationMode.Utils
@@ -379,8 +377,8 @@ namespace STS2QuickAnimationMode.Utils
                 return true;
 
             return NPlayerHand.Instance?.IsInCardSelection == true
-                   || NOverlayStack.Instance?.Peek() is ICardSelector
-                   || NRun.Instance?.GlobalUi?.TargetManager?.IsInSelection == true;
+                   || CardSelectionState.IsSelectionOverlayOpen
+                   || NRun.Instance?.GlobalUi.TargetManager.IsInSelection == true;
         }
 
         private static void SetTarget(float target, bool immediate)

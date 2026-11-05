@@ -104,7 +104,8 @@ namespace STS2QuickAnimationMode
             patcher.RegisterPatch<TimelineUnlockRelicsScreenOpenSpeedScopePatch>();
             patcher.RegisterPatch<TimelineUnlockPotionsScreenOpenSpeedScopePatch>();
             patcher.RegisterPatch<TimelineUnlockCharacterScreenOpenSpeedScopePatch>();
-            patcher.RegisterPatch<TimelineUnlockEpochScreenOpenSpeedScopePatch>();
+            if (TimelineUnlockScreenAnimationTracker.EpochScreenType != null)
+                patcher.RegisterPatch<TimelineUnlockEpochScreenOpenSpeedScopePatch>();
             patcher.RegisterPatch<TimelineUnlockMiscScreenOpenSpeedScopePatch>();
             patcher.RegisterPatch<TimelineCommonBannerAnimateInSpeedScopePatch>();
             patcher.RegisterPatch<TimelineCommonBannerChangeTextSpeedScopePatch>();

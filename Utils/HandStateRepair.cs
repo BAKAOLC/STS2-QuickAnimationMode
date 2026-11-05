@@ -8,8 +8,6 @@ using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
-using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
-using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace STS2QuickAnimationMode.Utils
@@ -155,7 +153,7 @@ namespace STS2QuickAnimationMode.Utils
         {
             try
             {
-                if (!SpeedManager.AreCardBehaviorPatchesEnabled || CombatManager.Instance?.IsInProgress != true)
+                if (!SpeedManager.AreCardBehaviorPatchesEnabled || !CombatManager.Instance.IsInProgress)
                     return;
 
                 if (IsRepairUnsafeNow())
@@ -165,7 +163,7 @@ namespace STS2QuickAnimationMode.Utils
                 }
 
                 var hand = NPlayerHand.Instance;
-                if (hand == null || hand.CurrentMode != NPlayerHand.Mode.Play || hand.InCardPlay)
+                if (hand is not { CurrentMode: NPlayerHand.Mode.Play, InCardPlay: false })
                     return;
 
                 foreach (var holder in hand.CardHolderContainer.GetChildren().OfType<NHandCardHolder>().ToList())
@@ -197,15 +195,15 @@ namespace STS2QuickAnimationMode.Utils
             if (_activeHandMutationDepth > 0)
                 return true;
 
-            if (CombatManager.Instance?.IsInProgress != true)
+            if (!CombatManager.Instance.IsInProgress)
                 return false;
 
             var hand = NPlayerHand.Instance;
             if (hand is { InCardPlay: true } || hand?.IsInCardSelection == true)
                 return true;
 
-            if (NOverlayStack.Instance?.Peek() is ICardSelector
-                || NRun.Instance?.GlobalUi?.TargetManager?.IsInSelection == true)
+            if (CardSelectionState.IsSelectionOverlayOpen
+                || NRun.Instance?.GlobalUi.TargetManager.IsInSelection == true)
                 return true;
 
             if (IsCardPreviewActive())

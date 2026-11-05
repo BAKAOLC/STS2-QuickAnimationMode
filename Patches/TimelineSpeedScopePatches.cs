@@ -40,20 +40,20 @@ namespace STS2QuickAnimationMode.Patches
 
             whatsMoved.Position = whatsMoved.Position.Lerp(targetPosition, Step(delta, MoveSmoothness));
 
-            if (!isDragging)
-            {
-                var x = targetPosition.X;
-                var minX = epochSlots.Position.X - whatsMoved.Size.X;
-                var maxX = epochSlots.Position.X + epochSlots.Size.X - whatsMoved.Size.X;
+            if (isDragging)
+                return true;
 
-                if (x < minX)
-                    x = Mathf.Lerp(x, minX, Step(delta, BounceBackStrength));
-                else if (x > maxX)
-                    x = Mathf.Lerp(x, maxX, Step(delta, BounceBackStrength));
+            var x = targetPosition.X;
+            var minX = epochSlots.Position.X - whatsMoved.Size.X;
+            var maxX = epochSlots.Position.X + epochSlots.Size.X - whatsMoved.Size.X;
 
-                targetPosition = new(x, targetPosition.Y);
-                TargetPositionField.SetValue(slotsContainer, targetPosition);
-            }
+            if (x < minX)
+                x = Mathf.Lerp(x, minX, Step(delta, BounceBackStrength));
+            else if (x > maxX)
+                x = Mathf.Lerp(x, maxX, Step(delta, BounceBackStrength));
+
+            targetPosition = new(x, targetPosition.Y);
+            TargetPositionField.SetValue(slotsContainer, targetPosition);
 
             return true;
         }
@@ -146,7 +146,7 @@ namespace STS2QuickAnimationMode.Patches
             tween.TweenProperty(icon, "scale", Vector2.One, 0.5).From(Vector2.One * 0.1f)
                 .SetEase(Tween.EaseType.Out)
                 .SetTrans(Tween.TransitionType.Back);
-            await tween.AwaitFinished(column);
+            await NativeTweenCompat.AwaitFinishedAsync(tween, column);
         }
 
         private static async Task SpawnNameAndYearTracked(NEraColumn column, MegaLabel name, MegaLabel year)
@@ -170,7 +170,7 @@ namespace STS2QuickAnimationMode.Patches
                 tween.TweenProperty(year, "position:y", 20f, 1.0).SetDelay(0.5).From(0f)
                     .SetEase(Tween.EaseType.Out)
                     .SetTrans(Tween.TransitionType.Cubic);
-                await tween.AwaitFinished(column);
+                await NativeTweenCompat.AwaitFinishedAsync(tween, column);
             }
 
             await Task.Delay(500);
@@ -194,7 +194,7 @@ namespace STS2QuickAnimationMode.Patches
             tween.TweenProperty(column, "position", targetPosition, 2.0)
                 .SetEase(Tween.EaseType.InOut)
                 .SetTrans(Tween.TransitionType.Cubic);
-            await tween.AwaitFinished(column);
+            await NativeTweenCompat.AwaitFinishedAsync(tween, column);
         }
     }
 
@@ -215,7 +215,7 @@ namespace STS2QuickAnimationMode.Patches
         private static async Task TrackTweenAsync(NTimelineTutorial tutorial, Tween tween)
         {
             using var scope = SpeedManager.BeginScope(SafeSpeedReason.TimelineAnimation);
-            await tween.AwaitFinished(tutorial);
+            await NativeTweenCompat.AwaitFinishedAsync(tween, tutorial);
         }
     }
 
@@ -249,7 +249,7 @@ namespace STS2QuickAnimationMode.Patches
         private static async Task TrackTweenAsync(NUnlockInfo unlockInfo, Tween tween)
         {
             using var scope = SpeedManager.BeginScope(SafeSpeedReason.TimelineAnimation);
-            await tween.AwaitFinished(unlockInfo);
+            await NativeTweenCompat.AwaitFinishedAsync(tween, unlockInfo);
         }
     }
 
@@ -270,8 +270,11 @@ namespace STS2QuickAnimationMode.Patches
         private static readonly FieldInfo? CharacterTweenField =
             typeof(NUnlockCharacterScreen).GetField("_tween", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        internal static Type? EpochScreenType { get; } = typeof(NUnlockScreen).Assembly.GetType(
+            "MegaCrit.Sts2.Core.Nodes.Screens.Timeline.UnlockScreens.NUnlockEpochScreen");
+
         private static readonly FieldInfo? EpochTweenField =
-            typeof(NUnlockEpochScreen).GetField("_cardFlyTween", BindingFlags.Instance | BindingFlags.NonPublic);
+            EpochScreenType?.GetField("_cardFlyTween", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static readonly FieldInfo? MiscTweenField =
             typeof(NUnlockMiscScreen).GetField("_tween", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -297,7 +300,7 @@ namespace STS2QuickAnimationMode.Patches
                 NUnlockRelicsScreen relicsScreen => RelicsTweenField?.GetValue(relicsScreen),
                 NUnlockPotionsScreen potionsScreen => PotionsTweenField?.GetValue(potionsScreen),
                 NUnlockCharacterScreen characterScreen => CharacterTweenField?.GetValue(characterScreen),
-                NUnlockEpochScreen epochScreen => EpochTweenField?.GetValue(epochScreen),
+                _ when EpochScreenType?.IsInstanceOfType(screen) == true => EpochTweenField?.GetValue(screen),
                 NUnlockMiscScreen miscScreen => MiscTweenField?.GetValue(miscScreen),
                 _ => null,
             };
@@ -342,10 +345,11 @@ namespace STS2QuickAnimationMode.Patches
         private static async Task TrackTweenAsync(Node owner, Tween tween)
         {
             using var scope = SpeedManager.BeginScope(SafeSpeedReason.TimelineAnimation);
-            await tween.AwaitFinished(owner);
+            await NativeTweenCompat.AwaitFinishedAsync(tween, owner);
         }
     }
 
+    // ReSharper disable InconsistentNaming
     public class TimelineFirstTimeSpeedScopePatch : IPatchMethod
     {
         public static string PatchId => "safe_speed_timeline_first_time";
@@ -524,10 +528,12 @@ namespace STS2QuickAnimationMode.Patches
 
         public static ModPatchTarget[] GetTargets()
         {
-            return [new(typeof(NUnlockEpochScreen), nameof(NUnlockEpochScreen.Open), Type.EmptyTypes)];
+            return TimelineUnlockScreenAnimationTracker.EpochScreenType is { } screenType
+                ? [new(screenType, nameof(NUnlockScreen.Open), Type.EmptyTypes)]
+                : [];
         }
 
-        public static void Postfix(NUnlockEpochScreen __instance)
+        public static void Postfix(NUnlockScreen __instance)
         {
             TimelineUnlockScreenAnimationTracker.TrackOpenTweens(__instance);
         }
@@ -725,4 +731,5 @@ namespace STS2QuickAnimationMode.Patches
             return !TimelineSlotsContainerStabilizer.TryProcess(__instance, delta);
         }
     }
+    // ReSharper restore InconsistentNaming
 }
